@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: Date dimension (star schema).
+    columns:
+      - name: date_key
+        data_tests: [not_null, unique]
+  - name: dim_device
+    description: Device dimension with integer surrogate key.
+    columns:
+      - name: device_key
+        data_tests: [not_null, unique]
+  - name: dim_community
+    description: Community dimension with integer surrogate key.
+    columns:
+      - name: community_key
+        data_tests: [not_null, unique]
+
+  - name: fct_daily_savings
+    description: >
+      Savings fact at date x community x household x device grain, with integer
+      surrogate FKs to the dimensions. Relationship tests enforce the star.
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships: { to: ref('dim_date'), field: date_key }
+      - name: device_key
+        data_tests:
+          - not_null
+          - relationships: { to: ref('dim_device'), field: device_key }
+      - name: community_key
+        data_tests:
+          - not_null
+          - relationships: { to: ref('dim_community'), field: community_key }
+      - name: cost_saving_p
+        data_tests: [not_null]
+
+  - name: rpt_daily_savings
+    description: Pre-aggregated daily totals for the timeline page.
+  - name: rpt_monthly_community_savings
+    description: Monthly savings per community for the comparison page.

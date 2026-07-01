@@ -1,0 +1,53 @@
+// Power BI DAX measures for the Community Energy Flexibility dashboard.
+// Written per the dax-optimization guidance: VAR for shared sub-expressions,
+// DIVIDE for safe division, COUNTROWS over COUNT, explicit BLANK handling.
+// Model: fct_daily_savings (fact) related to dim_date / dim_device /
+// dim_community by their integer surrogate keys (single-direction filters).
+
+// --- Headline savings -------------------------------------------------------
+
+Total Cost Saving (GBP) =
+DIVIDE ( SUM ( fct_daily_savings[cost_saving_p] ), 100 )
+
+Total Carbon Saving (kg) =
+DIVIDE ( SUM ( fct_daily_savings[carbon_saving_g] ), 1000 )
+
+Peak Slots Avoided =
+SUM ( fct_daily_savings[peak_slots_avoided] )
+
+Tasks Optimised =
+COUNTROWS ( fct_daily_savings )
+
+Households Participating =
+DISTINCTCOUNT ( fct_daily_savings[household_id] )
+
+Avg Recommendation Confidence =
+AVERAGE ( fct_daily_savings[confidence] )
+
+// --- Ratio: safe division against the baseline ------------------------------
+
+Cost Saving % =
+VAR SavingP    = SUM ( fct_daily_savings[cost_saving_p] )
+VAR BaselineP  = SUM ( fct_daily_savings[baseline_cost_p] )
+RETURN
+    DIVIDE ( SavingP, BaselineP )   // BLANK when no baseline, never a #DIV/0
+
+// --- Time intelligence: month-over-month (the slow-when-sliced case) --------
+
+Cost Saving (GBP) MoM % =
+VAR Current  = [Total Cost Saving (GBP)]
+VAR Prior    =
+    CALCULATE (
+        [Total Cost Saving (GBP)],
+        DATEADD ( dim_date[full_date], -1, MONTH )
+    )
+RETURN
+    DIVIDE ( Current - Prior, Prior )   // BLANK in the first period, by design
+
+// --- Confidence-gated saving: only count High/Medium recommendations --------
+
+Trusted Cost Saving (GBP) =
+CALCULATE (
+    [Total Cost Saving (GBP)],
+    KEEPFILTERS ( fct_daily_savings[confidence] >= 0.5 )
+)
