@@ -29,6 +29,10 @@ mlruns/
 reports/*.xlsx
 reports/*.pdf
 
+# Power BI: exported CSVs are derived (regenerate from the dbt build); keep the
+# .pbix and screenshots.
+powerbi/data/
+
 # Secrets / env
 .env
 *.local
