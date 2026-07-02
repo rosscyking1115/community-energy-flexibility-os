@@ -65,13 +65,28 @@ those three is spelled out in [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 
 | Path | What's there |
 |---|---|
-| `src/community_energy_flex/` | Core: `domain/`, `data_sources/`, `optimisation/`, `reporting/`, `pipeline/`, `monitoring/` |
+| `src/community_energy_flex/` | Core: `domain/`, `data_sources/`, `optimisation/`, `reporting/`, `pipeline/`, `monitoring/`, `auth/`, `experiments/` |
 | `app/streamlit_app.py` | The decision app |
 | `orchestration/` | Dagster assets/jobs/schedules (thin wrappers over `pipeline/`) |
-| `dbt_energy/` | dbt warehouse (DuckDB dev + Snowflake target), staging → options mart |
-| `warehouse/` | Snowflake bootstrap DDL |
-| `tests/` | Optimiser invariants, confidence, tariffs, reports, API parsing |
-| `docs/` | Product thesis, data sources, methodology, safety & privacy, roadmap |
+| `dbt_energy/` | dbt warehouse (DuckDB dev + Snowflake target), staging → options mart + reporting star |
+| `warehouse/` | Snowflake bootstrap DDL + row-access policies |
+| `powerbi/` | Dashboard `.pbix`, DAX measures, theme |
+| `tests/` | Optimiser invariants, confidence, tariffs, reports, auth, app smoke test |
+| `docs/` | See the index below |
+
+### Docs
+
+| Doc | What |
+|---|---|
+| [PRODUCT_THESIS](docs/PRODUCT_THESIS.md) · [ROADMAP](docs/ROADMAP.md) | Why it exists; the 3-month build plan |
+| [METHODOLOGY](docs/METHODOLOGY.md) | Baseline, cost/carbon maths, confidence |
+| [ARCHITECTURE](docs/ARCHITECTURE.md) | Layers, deep-module review, ADRs |
+| [DATA_SOURCES](docs/DATA_SOURCES.md) · [SAFETY_AND_PRIVACY](docs/SAFETY_AND_PRIVACY.md) | Inputs & licensing; safety, privacy, RBAC scope |
+| [SNOWFLAKE_SETUP](docs/SNOWFLAKE_SETUP.md) · [DAGSTER_PIPELINE](docs/DAGSTER_PIPELINE.md) | Warehouse & orchestration |
+| [POWERBI_DASHBOARD_GUIDE](docs/POWERBI_DASHBOARD_GUIDE.md) · [POWERBI_MODEL_REVIEW](docs/POWERBI_MODEL_REVIEW.md) | Build the dashboard; model review |
+| [RBAC_MODEL](docs/RBAC_MODEL.md) | Roles, two-layer enforcement, OIDC |
+| [RUNBOOK](docs/RUNBOOK.md) | Operate it; failure handling |
+| [CASE_STUDY](docs/CASE_STUDY.md) | Worked community-centre example |
 
 ## Data sources
 
