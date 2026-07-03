@@ -1,0 +1,13 @@
+/* Bare reset only. The visual design system is built by the design team;
+   intentionally minimal here so it can be replaced wholesale. */
+:root {
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}

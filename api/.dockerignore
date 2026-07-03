@@ -1,0 +1,18 @@
+# Build context is the repo root; keep the image small and irrelevant paths out.
+web/
+node_modules/
+tests/
+api/tests/
+dbt_energy/
+powerbi/
+orchestration/
+app/
+docs/
+mlruns/
+monitoring_data/
+**/__pycache__/
+*.pyc
+*.duckdb
+.git/
+.github/
+.venv/
