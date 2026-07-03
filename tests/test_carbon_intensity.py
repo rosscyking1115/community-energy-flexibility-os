@@ -68,6 +68,22 @@ def test_client_parses_postcode_forecast():
     assert len(slots) == 2
 
 
+def test_regional_by_id_builds_forecast_url_with_from():
+    seen = {}
+
+    def fake(url):
+        seen["url"] = url
+        return REGIONAL
+
+    client = CarbonIntensityClient(fetch=fake)
+    slots = client.regional_forecast_by_id(13)
+    # the forward endpoint requires a {from} timestamp in the path
+    assert "/regional/intensity/" in seen["url"]
+    assert "/fw24h/regionid/13" in seen["url"]
+    assert "T00:00Z" in seen["url"]  # next-midnight aligned
+    assert len(slots) == 1
+
+
 def test_carbon_curve_pads_to_requested_length():
     slots = parse_intensity_periods(NATIONAL)
     curve = carbon_curve(slots, num_slots=4)

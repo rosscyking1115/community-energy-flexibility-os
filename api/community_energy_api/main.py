@@ -13,6 +13,7 @@ from collections.abc import Callable
 from fastapi import FastAPI, HTTPException
 
 from community_energy_api import reference
+from community_energy_api.carbon import provider as _live_carbon
 from community_energy_api.models import (
     ApplianceOut,
     OptimiseRequest,
@@ -20,7 +21,6 @@ from community_energy_api.models import (
     RegionOut,
 )
 from community_energy_api.service import run_optimise
-from community_energy_flex.demo import sample_carbon_curve
 
 app = FastAPI(
     title="Community Energy Flexibility OS API",
@@ -29,13 +29,9 @@ app = FastAPI(
     "Planning advice only - no guaranteed savings.",
 )
 
-
-def _sample_carbon(region: dict) -> tuple[list[float], str]:
-    return sample_carbon_curve(), "sample"
-
-
-# Swap this for the live GB forecast / NI typical-profile provider.
-carbon_provider: Callable[[dict], tuple[list[float], str]] = _sample_carbon
+# Live carbon: GB forecast + NI typical-profile, with graceful sample fallback.
+# Module-level so tests can swap it for an offline stub.
+carbon_provider: Callable[[dict], tuple[list[float], str]] = _live_carbon
 
 
 def _region_out(r: dict) -> RegionOut:

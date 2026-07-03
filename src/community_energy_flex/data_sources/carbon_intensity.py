@@ -11,12 +11,26 @@ core package pulls in no third-party HTTP dependency.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from community_energy_flex.data_sources.http import get_json
 from community_energy_flex.domain.models import SLOTS_PER_DAY, CarbonSlot
 
 BASE_URL = "https://api.carbonintensity.org.uk"
+
+
+def _next_midnight_utc() -> datetime:
+    """Start of the next UTC day, so a 24h forecast is a full midnight-aligned
+    day (slot 0 = 00:00), matching how tasks express clock-time constraints."""
+    return (datetime.now(UTC) + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+
+def _forecast_from(from_dt: datetime | None) -> str:
+    # The regional forward endpoints require a {from} in the path, e.g.
+    # /regional/intensity/2026-07-03T00:00Z/fw24h/regionid/13
+    return (from_dt or _next_midnight_utc()).strftime("%Y-%m-%dT%H:%MZ")
 
 
 def _parse_dt(value: str) -> datetime:
@@ -82,9 +96,22 @@ class CarbonIntensityClient:
     def national_forecast_48h(self) -> list[CarbonSlot]:
         return parse_intensity_periods(self._fetch(f"{self.base_url}/intensity/fw48h"))
 
-    def regional_forecast_by_postcode(self, outcode: str) -> list[CarbonSlot]:
+    def regional_forecast_by_id(
+        self, region_id: int, from_dt: datetime | None = None
+    ) -> list[CarbonSlot]:
+        """Regional 24h forecast (48 half-hourly periods) for a DNO region id
+        (1-14), from the next UTC midnight by default."""
+        frm = _forecast_from(from_dt)
+        return parse_intensity_periods(
+            self._fetch(f"{self.base_url}/regional/intensity/{frm}/fw24h/regionid/{region_id}")
+        )
+
+    def regional_forecast_by_postcode(
+        self, outcode: str, from_dt: datetime | None = None
+    ) -> list[CarbonSlot]:
         """Regional 24h forecast for a postcode outcode (e.g. ``"BS1"``)."""
         outcode = outcode.strip().upper()
+        frm = _forecast_from(from_dt)
         return parse_intensity_periods(
-            self._fetch(f"{self.base_url}/regional/intensity/fw24h/postcode/{outcode}")
+            self._fetch(f"{self.base_url}/regional/intensity/{frm}/fw24h/postcode/{outcode}")
         )
