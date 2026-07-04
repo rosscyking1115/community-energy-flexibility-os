@@ -9,7 +9,7 @@ description = "Decision-support tool that recommends when to run flexible electr
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "Leaf Feng" }]
+authors = [{ name = "Cheng-Yuan King" }]
 keywords = ["energy", "carbon", "flexibility", "demand-response", "optimisation"]
 dependencies = []
 
