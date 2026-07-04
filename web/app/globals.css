@@ -1,13 +1,138 @@
-/* Bare reset only. The visual design system is built by the design team;
-   intentionally minimal here so it can be replaced wholesale. */
+/* Design system for "After Midnight" — see DESIGN_NOTES.md. Tokens as custom
+   properties; each component/page carries its own CSS Module. The one rule that
+   defines the product: colour is never a verdict. Amber says only "act here". */
+
 :root {
   color-scheme: light;
+
+  /* Palette */
+  --paper: #e9edf1; /* page background — cool "dawn" grey-blue, not warm cream */
+  --paper-band: #dde3e9; /* the full-bleed band's ground strip */
+  --panel: #f1f4f7; /* cards, notes, fields */
+  --panel-alt: #e1e6eb; /* disabled control fill, table sticky header */
+  --ink: #1a1d21; /* text, price line, primary buttons, selected chips */
+  --ink-soft: #2a2f35; /* long-form body */
+  --ink-soft-2: #3a4048; /* secondary text */
+  --slate: #5b636c; /* captions, mono labels (AA 4.8:1 on paper) */
+  --slate-mute: #8a929b; /* least-emphasis captions (≥12px non-essential only) */
+  --curve: #2e3a46; /* the band's carbon bars */
+  --filament: #e4a11b; /* THE accent — "run here" marker + focus ring only */
+  --line: #c9d2db; /* hairline borders */
+  --line-strong: #9aa6b1; /* control borders / ghost buttons (≥3:1 non-text) */
+
+  --amber-wash: rgba(228, 161, 27, 0.16); /* window shading over the band */
+  --amber-chip: rgba(228, 161, 27, 0.22); /* window chip in rec cards */
+  --amber-row: rgba(228, 161, 27, 0.14); /* recommended table rows */
+
+  --font-fallback: system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-fallback);
+  --font-mono: ui-monospace, "SFMono-Regular", monospace;
+
+  --radius: 7px;
+  --radius-lg: 10px;
+  --col: 1080px; /* content column */
+  --col-band: 1320px; /* band wrapper inside the full-bleed strip */
+  --pad-x: 22px;
 }
+
 * {
   box-sizing: border-box;
 }
+html,
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  padding: 0;
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Numbers are the interface — mono figures always ride tabular numerals. */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: rgba(228, 161, 27, 0.3);
+}
+
+/* One focus treatment everywhere: amber ring + 1px ink edge → guaranteed ≥3:1
+   even on light paper (WCAG 2.2 §2.4.7 / §1.4.11). */
+:focus-visible {
+  outline: 3px solid var(--filament);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 1px var(--ink);
+  border-radius: 3px;
+}
+input[type="range"]:focus-visible {
+  outline-offset: 3px;
+}
+
+/* Focused items clear the sticky masthead (WCAG 2.2 §2.4.11). */
+:focus {
+  scroll-margin-top: 84px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link — first focusable element; appears on focus. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 50;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 12px;
+}
+
+@keyframes cef-shimmer {
+  0% {
+    background-position: -520px 0;
+  }
+  100% {
+    background-position: 520px 0;
+  }
+}
+@keyframes cef-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }

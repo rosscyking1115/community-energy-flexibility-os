@@ -3,6 +3,7 @@
 
 import type {
   Appliance,
+  Forecast,
   OptimiseRequest,
   OptimiseResponse,
   Region,
@@ -25,6 +26,12 @@ export function getRegions(): Promise<Region[]> {
 
 export function getAppliances(): Promise<Appliance[]> {
   return fetch("/api/appliances").then((r) => asJson<Appliance[]>(r));
+}
+
+export function getForecast(regionId: string): Promise<Forecast> {
+  return fetch(`/api/forecast/${encodeURIComponent(regionId)}`).then((r) =>
+    asJson<Forecast>(r),
+  );
 }
 
 export function optimise(body: OptimiseRequest): Promise<OptimiseResponse> {

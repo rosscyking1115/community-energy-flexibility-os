@@ -24,6 +24,18 @@ export interface Appliance {
   noise_sensitive: boolean;
 }
 
+export interface Forecast {
+  region: string;
+  region_id: string;
+  carbon_g: number[]; // 48 half-hourly gCO2/kWh
+  carbon_source: string; // "live_forecast" | "typical_profile" | "sample"
+  price_p: number[] | null; // 48 half-hourly p/kWh (Agile), null if unavailable
+  agile_day: string | null;
+  agile_product: string | null;
+  has_live_forecast: boolean;
+  supports_agile: boolean;
+}
+
 export type TariffKind = "flat" | "economy7" | "agile" | "manual_half_hourly";
 
 export interface TariffSpec {
