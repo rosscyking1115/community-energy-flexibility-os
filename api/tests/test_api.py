@@ -76,6 +76,30 @@ def test_optimise_with_agile_tariff_fetches_prices():
     assert len(resp.json()["tasks"]) == 1
 
 
+def test_forecast_gb_has_carbon_and_price():
+    resp = client.get("/v1/forecast/london")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["region"] == "London"
+    assert len(data["carbon_g"]) == 48
+    assert data["has_live_forecast"] is True and data["supports_agile"] is True
+    assert data["price_p"] is not None and len(data["price_p"]) == 48
+    assert data["agile_product"]
+
+
+def test_forecast_ni_has_carbon_but_no_price():
+    resp = client.get("/v1/forecast/northern-ireland")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["carbon_g"]) == 48
+    assert data["supports_agile"] is False
+    assert data["price_p"] is None
+
+
+def test_forecast_unknown_region_404():
+    assert client.get("/v1/forecast/atlantis").status_code == 404
+
+
 def test_optimise_rejects_impossible_window():
     body = {
         "region_id": "london",

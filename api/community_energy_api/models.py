@@ -36,6 +36,22 @@ class AgileTariffOut(BaseModel):
     source: str = "live_agile"
 
 
+class ForecastOut(BaseModel):
+    """The day's shape for a region: the 48-slot carbon curve the band draws,
+    plus the Agile price curve when the region has one. Powers the website's
+    signature day-band (home hero + results) without running an optimise."""
+
+    region: str
+    region_id: str
+    carbon_g: list[float]  # 48 half-hourly gCO2/kWh
+    carbon_source: str  # "live_forecast" | "typical_profile" | "sample"
+    price_p: list[float] | None = None  # 48 half-hourly p/kWh (Agile), null if unavailable
+    agile_day: str | None = None  # day the price curve is for (ISO), when present
+    agile_product: str | None = None
+    has_live_forecast: bool
+    supports_agile: bool
+
+
 class TariffSpec(BaseModel):
     kind: Literal["flat", "economy7", "agile", "manual_half_hourly"] = "flat"
     standing_charge_p: float = 0.0

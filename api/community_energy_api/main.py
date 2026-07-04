@@ -20,6 +20,7 @@ from community_energy_api.carbon import provider as _live_carbon
 from community_energy_api.models import (
     AgileTariffOut,
     ApplianceOut,
+    ForecastOut,
     OptimiseRequest,
     OptimiseResponse,
     RegionOut,
@@ -80,6 +81,37 @@ def agile_tariff(region_id: str) -> AgileTariffOut:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AgileTariffOut(
         region=region["name"], product=_AGILE_PRODUCT, day=day, unit_rates_p=curve
+    )
+
+
+@app.get("/v1/forecast/{region_id}", response_model=ForecastOut)
+def forecast(region_id: str) -> ForecastOut:
+    """The day's carbon (and Agile price) curve for a region — the data the
+    website's day-band renders. Carbon always resolves (live/typical/sample);
+    price is present only where Agile is available."""
+    region = reference.region_by_id(region_id)
+    if region is None:
+        raise HTTPException(status_code=404, detail=f"Unknown region '{region_id}'")
+    carbon, carbon_source = carbon_provider(region)
+    price_p: list[float] | None = None
+    agile_day: str | None = None
+    agile_product: str | None = None
+    if region.get("agile_gsp") is not None:
+        try:
+            price_p, agile_day = agile_provider(region)
+            agile_product = _AGILE_PRODUCT
+        except AgileUnavailable:
+            price_p = None  # region lists a GSP but no prices published yet
+    return ForecastOut(
+        region=region["name"],
+        region_id=region["id"],
+        carbon_g=carbon,
+        carbon_source=carbon_source,
+        price_p=price_p,
+        agile_day=agile_day,
+        agile_product=agile_product,
+        has_live_forecast=region["carbon_source"] == "gb_carbon_intensity",
+        supports_agile=region.get("agile_gsp") is not None,
     )
 
 
