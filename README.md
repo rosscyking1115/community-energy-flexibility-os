@@ -1,12 +1,16 @@
 # After Midnight
 
-> Decision-support that tells households and small organisations **when** to run
-> flexible electricity loads to cut cost and carbon — while respecting their
-> comfort constraints.
+> Works out **when** to run flexible electricity loads — a wash, an EV charge — to
+> cut cost and carbon, from live UK grid data, and shows the working.
 
 [![CI](https://github.com/rosscyking1115/after-midnight/actions/workflows/ci.yml/badge.svg)](https://github.com/rosscyking1115/after-midnight/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-informational.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+
+> A personal, open-source **learning project** — a small full-stack + data-engineering
+> build on UK public energy data. **Not a product**, and it doesn't need to be
+> (see [Why this exists](#why-this-exists)). Built to be read: live-API integration,
+> a scheduling/optimisation engine, a typed contract, and a front end.
 
 It doesn't just show *"carbon is low at 02:00."* It says *"run the washing machine
 02:30–04:00, charge the EV 01:30–04:30, expected saving £0.12 and 0.14 kg CO₂,
@@ -22,6 +26,28 @@ high confidence"* — with the assumptions and caveats attached.
 > [!NOTE]
 > Planning advice only. This tool does not control appliances, guarantee savings,
 > or replace official energy or supplier advice.
+
+## Why this exists
+
+To build and show a complete data path end to end — live public APIs → a
+warehouse → an optimiser → a typed API → a front end — on a problem I find
+genuinely interesting, not to fill a market gap. There isn't one, and that's
+stated up front on purpose:
+
+- **Octopus** already publishes a free [Greener Nights](https://octopus.energy/blog/greener-days-and-nights/)
+  forecast and auto-schedules cheapest/greenest charging on Intelligent Octopus Go.
+- Free third-party sites — **UK Grid Live**, **Energy Stats UK**, **AgileBuddy** —
+  do essentially this on the same public data.
+
+So this is a **learning / personal-utility build**, valued for the engineering on
+display rather than as something to adopt. The interesting parts, for a reviewer:
+
+- **Contract-first, typed end to end** — pydantic models → OpenAPI → generated
+  TypeScript, so the API and the front end can't silently drift.
+- **Graceful degradation by design** — every live feed is TTL-cached with a
+  last-good / sample fallback, so an upstream outage never takes the app down.
+- **It closes the loop** — a forecast-vs-actual **retro** ("did yesterday's plan
+  actually save?") measures realised vs forecast savings, not just predicted ones.
 
 ## Live
 
@@ -44,19 +70,19 @@ Endpoints: `/v1/regions`, `/v1/appliances`, `/v1/tariffs/agile/{region}`,
 is live: GB regional carbon (NESO / National Grid Carbon Intensity) and Octopus
 Agile prices, with an EirGrid typical-day profile for Northern Ireland.
 
-The consumer website that consumes it — **"After Midnight"**, a Next.js planner
-built around a full-day carbon/price band — lives in [`web/`](web); see
+The web front end that consumes it — a Next.js app built around a full-day
+carbon/price band — lives in [`web/`](web); see
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) to run or deploy it.
 
 ## What's inside
 
-An end-to-end, open-source reference build for community energy planning:
+The full data path, end to end:
 
 - **Optimiser** — rule-based (cheapest / greenest / balanced / avoid-peak) plus an
   LP/MILP optimiser (PuLP) that schedules loads jointly under a peak-load cap. Every
   recommendation carries a baseline comparison, a confidence band, and a caveat.
-- **Public API + website** — a FastAPI service wrapping the engine (live on Fly.io)
-  and a Next.js consumer app wired to it through a server-side BFF.
+- **API + front end** — a FastAPI service wrapping the engine (live on Fly.io) and a
+  Next.js app wired to it through a server-side BFF (typed end to end).
 - **Data** — GB Carbon Intensity API; tariff models (flat / Economy 7 / time-of-use /
   Octopus Agile); Open-Meteo weather.
 - **Warehouse** — dbt on DuckDB (dev) with a Snowflake target, plus a reporting star.
@@ -118,7 +144,7 @@ spelled out in [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 |---|---|
 | `src/community_energy_flex/` | Core engine: `domain/`, `data_sources/`, `optimisation/`, `reporting/`, `pipeline/`, `monitoring/`, `auth/`, `experiments/` |
 | `api/` | Public FastAPI service (`community_energy_api`) — regions, appliances, live carbon/Agile forecast, optimise |
-| `web/` | Next.js website "After Midnight" — the consumer planner, wired to the API |
+| `web/` | Next.js web front end — the planner UI, wired to the API through a BFF |
 | `app/streamlit_app.py` | The Streamlit decision app (power-user / ops tool) |
 | `orchestration/` | Dagster assets/jobs/schedules (thin wrappers over `pipeline/`) |
 | `dbt_energy/` | dbt warehouse (DuckDB dev + Snowflake target), staging → options mart + reporting star |
@@ -157,8 +183,11 @@ See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for fields and licensing.
 |---|---|
 | Engine, warehouse, Streamlit app, Power BI, RBAC | Done (v0.1.0) |
 | Public API (FastAPI) | **Live** on Fly.io |
-| Website ("After Midnight", Next.js) | Built; Vercel deploy pending |
-| Next | Wide-data / explainability pass, then growth (region pages, PWA) |
+| Web front end (Next.js) | Built; Vercel deploy pending |
+
+Scope is intentionally **capped** — this is a portfolio build, not a roadmap to a
+product. UK region coverage (all 14 GB GSP regions + Northern Ireland) is complete;
+no further data or feature expansion is planned.
 
 ## Contributing & licence
 
