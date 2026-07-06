@@ -10,11 +10,18 @@ and the numbers in the write-up follow.
 
 from __future__ import annotations
 
+import sys
+
 from community_energy_flex.demo import sample_carbon_curve, sample_tariffs
 from community_energy_flex.domain.models import Objective, Task, slot_to_time
 from community_energy_flex.monitoring.retro import evaluate_retrospective
 from community_energy_flex.optimisation.planning import build_planning_slots
 from community_energy_flex.optimisation.rule_based import optimise
+
+# Render £ and other symbols cleanly whatever the console's default codec is
+# (Windows terminals default to cp1252 and would otherwise mojibake the £).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # Riverside Community Centre - tomorrow's flexible loads. Times are half-hour
 # slots (13:00 = 26). "preferred" is what staff would do without the tool.

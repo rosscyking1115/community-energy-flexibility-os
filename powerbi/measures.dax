@@ -66,3 +66,10 @@ CALCULATE (
     [Total Cost Saving (GBP)],
     KEEPFILTERS ( fct_daily_savings[confidence] >= 0.5 )
 )
+
+// Share of the saving that rests on High/Medium-confidence recommendations -
+// the "how much of this can we stand behind?" number for the Quality page.
+// Returns BLANK when there is no saving, never a #DIV/0.
+// Format: 0.0%
+Trusted Saving % =
+DIVIDE ( [Trusted Cost Saving (GBP)], [Total Cost Saving (GBP)] )
