@@ -71,7 +71,10 @@ def main() -> int:
     print(f"  Plan committed on the forecast: {forecast_g:.0f} g CO2 saving expected"
           f" across {len(schedule.tasks)} loads.\n")
 
-    header = f"  {'How the day turned out':30} {'forecast':>9} {'actual':>9} {'realised':>9} {'fc MAE':>8}  {'still saved?':>12}"
+    header = (
+        f"  {'How the day turned out':30} {'forecast':>9} {'actual':>9}"
+        f" {'realised':>9} {'fc MAE':>8}  {'still saved?':>12}"
+    )
     print(header)
     print("  " + "-" * (len(header) - 2))
 
