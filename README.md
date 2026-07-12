@@ -185,6 +185,16 @@ must finish by 08:00, usually run at 19:00):
 The maths behind the baseline, the scoring, and confidence is in
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 
+## Power BI stakeholder dashboard
+
+![After Midnight Power BI dashboard — a date slicer, baseline-vs-optimised daily cost bars, the daily cost-saving trend, and a headline 22.1% cost-saving card, in the app's teal theme](docs/img/powerbi_cost_timeseries.png)
+
+A stakeholder view over the reporting star (dbt → DuckDB/Snowflake): cost/carbon
+savings, peak-slot avoidance, and per-device and per-community breakdowns, with an
+"advice-only" confidence disclaimer. Model + DAX in [`powerbi/`](powerbi/); see the
+[dashboard guide](docs/POWERBI_DASHBOARD_GUIDE.md). Figures are from the worked case
+study (synthetic households), not production results.
+
 ## Project layout
 
 | Path | What's there |
