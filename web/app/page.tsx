@@ -15,10 +15,11 @@ const WASH_DUR = 3; // slots (1.5h)
 const WASH_KWH = 0.8;
 const BASELINE_SLOT = 38; // 19:00 — a typical evening start
 
-export const dynamic = "force-dynamic"; // always tonight's forecast
+export const dynamic = "force-dynamic"; // always fetch current runtime provenance
 
 export default async function Home() {
   const forecast = await getForecastServer(HERO_REGION);
+  const isLive = forecast?.is_live_forecast === true;
 
   let band = null;
   let cleanest = "";
@@ -50,11 +51,11 @@ export default async function Home() {
     <main>
       <div style={{ maxWidth: "var(--col)", margin: "0 auto", padding: "56px var(--pad-x) 26px" }}>
         <p className="mono" style={{ ...eyebrow, display: "flex", alignItems: "center", gap: 10 }}>
-          <span aria-hidden="true" style={liveDot} />
-          Tonight · {HERO_REGION_NAME} · {forecast?.has_live_forecast === false ? "typical-day profile" : "live forecast"}
+          {isLive && <span aria-hidden="true" style={liveDot} />}
+          {isLive ? `Live forecast · ${HERO_REGION_NAME}` : `${forecast?.carbon_source_label ?? "Data unavailable"} · illustrative timing`}
         </p>
         <h1 style={{ fontWeight: 700, fontSize: "clamp(32px,5.4vw,54px)", lineHeight: 1.04, letterSpacing: "-0.03em", margin: "0 0 18px", maxWidth: "17ch", textWrap: "balance" }}>
-          The grid quietens after midnight. Run the load then.
+          Find a lower-cost, lower-carbon time to run flexible loads.
         </h1>
         <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.55, maxWidth: "54ch", color: "var(--ink-soft-2)", margin: 0 }}>
           One horizontal day, midnight to midnight. The dark bars are how heavy
@@ -76,7 +77,7 @@ export default async function Home() {
             </>
           ) : (
             <p className="mono" style={{ fontSize: 13, color: "var(--slate)", padding: "40px 0" }}>
-              Tonight&apos;s forecast is briefly unavailable — the plan still works below.
+              The planning curve is currently unavailable. Try the planner again shortly.
             </p>
           )}
         </div>
@@ -86,19 +87,25 @@ export default async function Home() {
         {forecast && (
           <div style={{ border: "1px solid var(--line)", background: "var(--panel)", borderRadius: "var(--radius-lg)", padding: "20px 22px", display: "flex", flexWrap: "wrap", gap: "26px 40px", alignItems: "flex-end", margin: "0 0 44px" }}>
             <div>
-              <p className="mono" style={figLabel}>Cleanest window tonight</p>
+              <p className="mono" style={figLabel}>{isLive ? "Cleanest window in this forecast" : "Lowest-carbon window in this illustrative profile"}</p>
               <p className="mono" style={bigFig}>{cleanest}</p>
             </div>
             <div style={{ height: 44, width: 1, background: "var(--line)", alignSelf: "center" }} />
             <div>
-              <p className="mono" style={figLabel}>Saved on a typical wash</p>
+              <p className="mono" style={figLabel}>{isLive ? "Forecast saving for a typical wash" : "Illustrative saving for a typical wash"}</p>
               <p className="mono" style={bigFig}>{saved}</p>
             </div>
             <p className="mono" style={{ margin: 0, flex: "1 1 220px", minWidth: 200, fontSize: 12.5, color: "var(--slate)", lineHeight: 1.5 }}>
               vs a 19:00 start · {WASH_KWH} kWh load<br />
-              {forecast.price_p ? "Octopus Agile" : forecast.region + " tariff"} · {forecast.carbon_source === "live_forecast" ? "NESO SW regional forecast" : "EirGrid typical-day profile"}
+              {forecast.price_p ? "Octopus Agile" : "No live price curve"} · {forecast.carbon_source_label}
             </p>
           </div>
+        )}
+
+        {forecast?.is_fallback && (
+          <p role="status" style={{ ...panelNote, margin: "-26px 0 36px" }}>
+            This recommendation uses a labelled GB sample profile because the live carbon feed was unavailable. Treat the timing and saving as illustrative.
+          </p>
         )}
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", margin: "0 0 56px" }}>
@@ -121,13 +128,14 @@ export default async function Home() {
 }
 
 const LEDGER = [
-  { figure: "£1–£3", text: "a typical week's saving on shiftable loads for one household on Agile — small, real money, shown beside the tariff it assumes." },
-  { figure: "48", text: "half-hourly price and carbon points a day, from the live regional forecast. The band is those 48 slots, nothing hidden." },
+  { figure: "2", text: "decision criteria: tariff cost and regional grid carbon, scored across each feasible start time." },
+  { figure: "48", text: "half-hourly price and carbon points a day. Live inputs are labelled; sample and typical profiles remain visibly illustrative." },
   { figure: "0", text: "accounts, adverts, or automation. It advises; you decide when to press start." },
 ];
 
 const eyebrow: React.CSSProperties = { fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--slate)", margin: "0 0 20px" };
 const liveDot: React.CSSProperties = { width: 7, height: 7, borderRadius: "50%", background: "var(--filament)", display: "inline-block", boxShadow: "0 0 0 3px var(--amber-chip)" };
+const panelNote: React.CSSProperties = { border: "1px solid var(--line)", borderLeft: "4px solid var(--filament)", borderRadius: 7, padding: "13px 15px", color: "var(--ink-soft-2)", fontSize: 13.5, lineHeight: 1.5 };
 const figLabel: React.CSSProperties = { fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--slate)", margin: "0 0 7px" };
 const bigFig: React.CSSProperties = { margin: 0, fontWeight: 600, fontSize: "clamp(26px,4vw,38px)", letterSpacing: "-0.01em", lineHeight: 1 };
 const ctaPrimary: React.CSSProperties = { fontSize: 16, fontWeight: 600, color: "var(--paper)", background: "var(--ink)", border: "1px solid var(--ink)", borderRadius: 7, padding: "13px 22px", textDecoration: "none", minHeight: 24, display: "inline-flex", alignItems: "center" };

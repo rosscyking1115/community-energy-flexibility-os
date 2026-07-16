@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Method — After Midnight",
+  title: "Method — Community Energy Flex",
   description: "How the recommended window and the saving are worked out.",
 };
 
@@ -19,8 +19,8 @@ const ROWS = [
     p: 'Grid carbon intensity is published by region (a GSP group), so we say "South West England region", never your street. Northern Ireland has no live GB feed, so we use a typical-day EirGrid profile and label it as such.',
   },
   {
-    h: "Confidence, not certainty",
-    p: "Forecasts move. A High-confidence window sits in a broad, stable trough where a small error will not change the advice. Low means the saving is real but sensitive to how the day turns out. This is decision support — you decide.",
+    h: "A robustness indicator, not a probability",
+    p: "The Strong, Mixed, or Fragile indicator combines how decisive the preferred window is with forecast horizon, carbon-data type, and tariff provenance. It is deterministic and uncalibrated: it helps expose sensitivity, but it is not a probability and does not guarantee an outcome.",
   },
 ];
 

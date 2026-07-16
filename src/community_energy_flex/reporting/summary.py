@@ -25,7 +25,7 @@ class TaskLine:
     baseline_window: str
     cost_saving_p: float
     carbon_saving_g: float
-    confidence_band: str
+    robustness_band: str
     caveat: str
 
 
@@ -61,7 +61,7 @@ def build_action_summary(schedule: Schedule) -> ActionSummary:
             ),
             cost_saving_p=round(t.cost_saving_p, 2),
             carbon_saving_g=round(t.carbon_saving_g, 1),
-            confidence_band=t.confidence_band,
+            robustness_band=t.robustness_band,
             caveat=t.caveat,
         )
         for t in schedule.tasks
@@ -90,7 +90,7 @@ def format_text_report(summary: ActionSummary) -> str:
             f"  - {line.device_type}: run {line.recommended_window} "
             f"(was {line.baseline_window}) "
             f"| saves {line.cost_saving_p:.1f}p, {line.carbon_saving_g:.0f} g "
-            f"| confidence: {line.confidence_band}"
+            f"| robustness: {line.robustness_band}"
         )
         out.append(f"      {line.caveat}")
     out += ["", summary.safety_statement]

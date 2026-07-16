@@ -3,7 +3,7 @@
 Each task is scheduled independently at its best-scoring feasible start (no
 cross-task load constraint yet - that arrives with the LP/MILP optimiser in a
 later milestone). Every recommendation carries a baseline comparison, a
-confidence score, and a caveat.
+robustness indicator, and a caveat.
 """
 
 from __future__ import annotations
@@ -17,10 +17,10 @@ from community_energy_flex.domain.models import (
     Task,
 )
 from community_energy_flex.optimisation.baseline import baseline_placement
-from community_energy_flex.optimisation.confidence import compute_confidence
 from community_energy_flex.optimisation.energy_model import all_placements
 from community_energy_flex.optimisation.feasible_windows import feasible_start_indices
 from community_energy_flex.optimisation.objective import score_placements
+from community_energy_flex.optimisation.robustness import compute_robustness
 
 _SLOT_HOURS = 0.5
 
@@ -50,10 +50,10 @@ def optimise(
         best = scored[0].placement
         base = baseline_placement(task, slots)
 
-        conf = compute_confidence(
+        robustness = compute_robustness(
             [sp.score for sp in scored],
             horizon_hours=best.start_index * _SLOT_HOURS,
-            using_actual_carbon=using_actual_carbon,
+            using_measured_carbon=using_actual_carbon,
             tariff_is_manual=tariff_is_manual,
             single_option=len(scored) == 1,
         )
@@ -69,9 +69,9 @@ def optimise(
                 baseline_start_index=base.start_index,
                 baseline_cost_p=base.cost_p,
                 baseline_carbon_g=base.carbon_g,
-                confidence=conf.value,
-                confidence_band=conf.band,
-                caveat=conf.caveat,
+                robustness_score=robustness.value,
+                robustness_band=robustness.band,
+                caveat=robustness.caveat,
             )
         )
 

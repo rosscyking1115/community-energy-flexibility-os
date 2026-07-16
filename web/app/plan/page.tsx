@@ -201,13 +201,13 @@ export default function PlanPage() {
                   <button key={r.id} type="button" role="radio" aria-checked={sel} onClick={() => chooseRegion(r.id)} style={{ ...regionBtn, ...(sel ? selected : unselected) }}>
                     <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{r.name}</span>
                     <span className="mono" style={{ display: "block", fontSize: 11.5, letterSpacing: "0.04em", marginTop: 4, color: sel ? "#b9c2cc" : "var(--slate)" }}>
-                      {r.has_live_forecast ? "live forecast" : "typical-day profile"}
+                      {r.supports_live_forecast ? "live forecast supported" : "typical-day profile"}
                     </span>
                   </button>
                 );
               })}
             </div>
-            {region && !region.has_live_forecast && (
+            {region && !region.supports_live_forecast && (
               <p style={{ margin: "12px 0 0", fontSize: 13.5, color: "var(--ink-soft-2)", background: "var(--panel)", border: "1px solid var(--line)", borderLeft: "3px solid var(--filament)", borderRadius: 6, padding: "11px 13px", lineHeight: 1.5 }}>
                 Northern Ireland has no live GB regional feed, so this uses an <strong style={{ fontWeight: 600 }}>EirGrid typical-day profile</strong>. Treat the timings as guidance, not a same-day forecast.
               </p>
@@ -372,13 +372,15 @@ function Results({ result, region, forecast, windows, baselines, tariffLabel, sh
   onToggleTable: () => void;
   onBack: () => void;
 }) {
-  const source = result.carbon_source === "live_forecast" ? "NESO regional forecast" : result.carbon_source === "typical_profile" ? "EirGrid typical-day profile" : "sample curve";
+  const source = result.carbon_source_label;
   const basis = `${tariffLabel} · ${source}`;
   const inWin = (i: number) => windows.some((w) => i >= w.s && i < w.e);
   const caveats = [
     "Savings are versus your own usual start time, not a best case. Change a baseline and the figures update.",
-    region && !region.has_live_forecast
+    region && !region.supports_live_forecast
       ? "Northern Ireland uses a typical-day profile, so treat window timings as guidance rather than a same-day forecast."
+      : result.is_fallback
+        ? "The live carbon feed was unavailable, so this plan uses a labelled GB sample profile and its timings are illustrative."
       : `Regional carbon is zonal — it reflects the ${region?.name ?? "selected"} region, not your exact postcode.`,
     "A run that finishes right on your finish-by time leaves no slack. Give yourself a margin if the load must be done.",
   ];
@@ -390,6 +392,14 @@ function Results({ result, region, forecast, windows, baselines, tariffLabel, sh
         <span aria-hidden="true" className="mono" style={{ fontSize: 13, color: "var(--slate)", fontWeight: 600, border: "1.5px solid var(--slate)", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>i</span>
         <p style={{ margin: 0, fontSize: 13.5, color: "var(--ink-soft-2)", lineHeight: 1.5 }}>{result.safety_statement}</p>
       </div>
+
+      {result.is_fallback && (
+        <div role="status" style={{ ...panel, borderLeft: "4px solid var(--filament)", padding: "14px 16px", margin: "-12px 0 26px" }}>
+          <p style={{ margin: 0, fontSize: 13.5, color: "var(--ink-soft-2)", lineHeight: 1.5 }}>
+            Live carbon data was unavailable. This plan uses {result.carbon_source_label}; treat the recommended times and savings as illustrative.
+          </p>
+        </div>
+      )}
 
       {/* totals */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 20, borderBottom: "2px solid var(--ink)", paddingBottom: 22, margin: "0 0 26px" }}>
@@ -404,7 +414,7 @@ function Results({ result, region, forecast, windows, baselines, tariffLabel, sh
       {/* recommendation cards */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "0 0 34px" }}>
         {result.tasks.map((t, i) => {
-          const level = t.confidence_band === "High" ? 3 : t.confidence_band === "Medium" ? 2 : 1;
+          const level = t.robustness_band === "Strong" ? 3 : t.robustness_band === "Mixed" ? 2 : 1;
           return (
             <article key={i} style={{ ...panel, padding: "18px 20px" }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: "0 0 12px" }}>
@@ -413,7 +423,7 @@ function Results({ result, region, forecast, windows, baselines, tariffLabel, sh
                   <span aria-hidden="true" style={{ display: "flex", gap: 3 }}>
                     {[1, 2, 3].map((n) => (<span key={n} style={{ display: "inline-block", width: 13, height: 8, borderRadius: 1, border: "1px solid var(--ink)", background: n <= level ? "var(--ink)" : "transparent" }} />))}
                   </span>
-                  <span className="mono" style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-soft-2)" }}>{t.confidence_band} confidence</span>
+                  <span className="mono" style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-soft-2)" }}>{t.robustness_band} robustness</span>
                 </div>
               </div>
               <p style={{ margin: "0 0 14px", fontSize: 16, lineHeight: 1.5 }}>
@@ -426,6 +436,7 @@ function Results({ result, region, forecast, windows, baselines, tariffLabel, sh
                 <span className="mono" style={{ fontSize: 21, fontWeight: 600 }}>{grams(t.carbon_saving_g)}</span>
                 <span style={{ fontSize: 12, color: "var(--slate)", lineHeight: 1.4 }}>saved · {basis}</span>
               </div>
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "var(--slate)", lineHeight: 1.45 }}>{t.caveat}</p>
             </article>
           );
         })}
@@ -492,7 +503,7 @@ function Results({ result, region, forecast, windows, baselines, tariffLabel, sh
         <p className="mono" style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--slate-mute)", margin: "0 0 10px" }}>Sources</p>
         <ol style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
           <li style={srcLi}>Price — Octopus Agile half-hourly rates (or the Economy 7 / flat rates you entered).</li>
-          <li style={srcLi}>Carbon — {region && !region.has_live_forecast ? "EirGrid typical-day profile for Northern Ireland." : "NESO / National Grid Carbon Intensity regional forecast (GB)."}</li>
+          <li style={srcLi}>Carbon — {result.carbon_source_label}{result.is_fallback ? ` (fallback: ${result.fallback_reason ?? "upstream unavailable"})` : ""}.</li>
           <li style={srcLi}>Appliance energy and duration — typical published figures; adjust to your own model if known.</li>
           <li style={srcLi}>All timings are local clock time for the selected region.</li>
         </ol>

@@ -5,7 +5,7 @@ Every tariff exposes ``unit_rate_p_per_kwh(slot_index)`` and a per-day
 standing charge is a fixed daily cost that does not change when a task is
 shifted, so including it in savings would distort the numbers (see
 docs/METHODOLOGY.md). ``is_manual`` flags tariffs typed in by hand, which the
-confidence model treats as less certain.
+robustness heuristic treats as less reliable.
 """
 
 from __future__ import annotations

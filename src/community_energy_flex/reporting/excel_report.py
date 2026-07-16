@@ -26,7 +26,7 @@ def build_workbook(summary: ActionSummary):
 
     ws = wb.active
     ws.title = "Executive Summary"
-    ws["A1"], ws["A1"].font = "After Midnight - Action Report", bold
+    ws["A1"], ws["A1"].font = "Community Energy Flex - Action Report", bold
     ws["A3"] = "Objective"
     ws["B3"] = summary.objective
     ws["A4"] = "Estimated cost saving (£)"
@@ -35,14 +35,17 @@ def build_workbook(summary: ActionSummary):
     ws["B5"] = round(summary.total_carbon_saving_kg, 2)
 
     sched = wb.create_sheet("Tomorrow Schedule")
-    headers = ["Device", "Recommended", "Baseline", "Saving (p)", "Saving (gCO2)", "Confidence"]
+    headers = [
+        "Device", "Recommended", "Baseline", "Saving (p)", "Saving (gCO2)",
+        "Robustness indicator",
+    ]
     sched.append(headers)
     for cell in sched[1]:
         cell.font = bold
     for line in summary.lines:
         sched.append([
             line.device_type, line.recommended_window, line.baseline_window,
-            line.cost_saving_p, line.carbon_saving_g, line.confidence_band,
+            line.cost_saving_p, line.carbon_saving_g, line.robustness_band,
         ])
 
     caveats = wb.create_sheet("Caveats")

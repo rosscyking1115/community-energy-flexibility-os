@@ -23,23 +23,70 @@ FORECAST = {"data": {"regionid": 13, "data": _periods()}}
 def test_gb_region_uses_live_forecast():
     region = {"id": "london", "carbon_source": "gb_carbon_intensity", "carbon_region_id": 13}
     client = CarbonIntensityClient(fetch=lambda url: FORECAST)
-    curve, source = carbon._gb_curve(region, client=client)
-    assert source == "live_forecast"
-    assert len(curve) == 48 and curve[0] == 100
+    result = carbon._gb_curve(region, client=client)
+    assert result.source == "gb_live_forecast"
+    assert result.is_live_forecast is True
+    assert result.is_fallback is False
+    assert len(result.values) == 48 and result.values[0] == 100
 
 
 def test_ni_region_uses_typical_profile():
     region = {"id": "northern-ireland", "carbon_source": "eirgrid_ni", "carbon_region_id": None}
-    curve, source = carbon._ni_curve(region)
-    assert source == "typical_profile"
-    assert len(curve) == 48
+    result = carbon._ni_curve(region)
+    assert result.source == "ni_eirgrid_typical_profile"
+    assert "EirGrid" in result.source_label
+    assert result.is_live_forecast is False
+    assert len(result.values) == 48
 
 
-def test_provider_falls_back_to_sample_on_feed_failure(monkeypatch):
+def test_provider_falls_back_to_gb_sample_on_timeout(monkeypatch):
     carbon.clear_cache()
     monkeypatch.setattr(
-        carbon, "_gb_curve", lambda r: (_ for _ in ()).throw(RuntimeError("feed down"))
+        carbon, "_gb_curve", lambda r: (_ for _ in ()).throw(TimeoutError("secret detail"))
     )
     region = {"id": "london", "carbon_source": "gb_carbon_intensity", "carbon_region_id": 13}
-    curve, source = carbon.provider(region)
-    assert source == "sample" and len(curve) == 48
+    result = carbon.provider(region)
+    assert result.source == "gb_sample_profile"
+    assert result.source_label == "GB sample profile"
+    assert result.is_fallback is True
+    assert result.fallback_reason == "upstream_timeout"
+    assert "secret detail" not in repr(result)
+    assert len(result.values) == 48
+
+
+def test_provider_classifies_invalid_payload_and_cache_preserves_provenance(monkeypatch):
+    carbon.clear_cache()
+    calls = 0
+
+    def fail(_region):
+        nonlocal calls
+        calls += 1
+        raise ValueError("bad upstream shape")
+
+    monkeypatch.setattr(carbon, "_gb_curve", fail)
+    region = {"id": "london", "carbon_source": "gb_carbon_intensity", "carbon_region_id": 13}
+    first = carbon.provider(region)
+    second = carbon.provider(region)
+    assert first is second
+    assert calls == 1
+    assert second.fallback_reason == "invalid_payload"
+
+
+def test_ni_profile_failure_never_falls_back_to_gb_data(monkeypatch):
+    carbon.clear_cache()
+    monkeypatch.setattr(
+        carbon, "_ni_curve", lambda r: (_ for _ in ()).throw(ValueError("bad NI profile"))
+    )
+    region = {
+        "id": "northern-ireland",
+        "carbon_source": "eirgrid_ni",
+        "carbon_region_id": None,
+    }
+
+    result = carbon.provider(region)
+
+    assert result.source == "unavailable"
+    assert result.source_label == "Carbon data unavailable"
+    assert result.values == []
+    assert result.is_fallback is True
+    assert result.fallback_reason == "invalid_payload"

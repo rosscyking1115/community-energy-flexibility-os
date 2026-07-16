@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import json
 import time
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 from community_energy_flex.data_sources.carbon_intensity import (
     CarbonIntensityClient,
@@ -21,39 +24,115 @@ from community_energy_flex.demo import sample_carbon_curve
 
 _TTL_SECONDS = 1800
 _NI_PROFILE = Path(__file__).resolve().parents[2] / "data" / "reference" / "ni_carbon_profile.json"
-_cache: dict[str, tuple[float, list[float], str]] = {}
+CarbonSource = Literal[
+    "gb_live_forecast",
+    "ni_eirgrid_typical_profile",
+    "gb_sample_profile",
+    "unavailable",
+]
+FallbackReason = Literal[
+    "upstream_timeout",
+    "upstream_error",
+    "invalid_payload",
+    "unsupported_source",
+]
 
 
-def _gb_curve(region: dict, client: CarbonIntensityClient | None = None) -> tuple[list[float], str]:
+@dataclass(frozen=True)
+class CarbonCurveResult:
+    values: list[float]
+    source: CarbonSource
+    source_label: str
+    retrieved_at_utc: datetime | None = None
+    valid_from_utc: datetime | None = None
+    valid_to_utc: datetime | None = None
+    is_fallback: bool = False
+    fallback_reason: FallbackReason | None = None
+
+    @property
+    def is_live_forecast(self) -> bool:
+        return self.source == "gb_live_forecast"
+
+
+_cache: dict[str, tuple[float, CarbonCurveResult]] = {}
+
+
+def _gb_curve(
+    region: dict, client: CarbonIntensityClient | None = None
+) -> CarbonCurveResult:
     client = client or CarbonIntensityClient()
     slots = client.regional_forecast_by_id(region["carbon_region_id"])
-    return carbon_curve(slots), "live_forecast"
+    return CarbonCurveResult(
+        values=carbon_curve(slots),
+        source="gb_live_forecast",
+        source_label="NESO / Carbon Intensity regional forecast",
+        retrieved_at_utc=datetime.now(UTC),
+        valid_from_utc=slots[0].start if slots else None,
+        valid_to_utc=slots[-1].end if slots else None,
+    )
 
 
-def _ni_curve(region: dict) -> tuple[list[float], str]:
+def _ni_curve(region: dict) -> CarbonCurveResult:
     data = json.loads(_NI_PROFILE.read_text(encoding="utf-8"))
-    return list(data["curve"]), "typical_profile"
+    return CarbonCurveResult(
+        values=list(data["curve"]),
+        source="ni_eirgrid_typical_profile",
+        source_label="EirGrid Northern Ireland typical-day profile",
+    )
 
 
-def provider(region: dict) -> tuple[list[float], str]:
-    """Return (48-slot carbon curve, source) for a region, cached with a TTL."""
+def _fallback_reason(exc: Exception) -> FallbackReason:
+    if isinstance(exc, TimeoutError):
+        return "upstream_timeout"
+    if isinstance(exc, (json.JSONDecodeError, KeyError, TypeError, ValueError)):
+        return "invalid_payload"
+    return "upstream_error"
+
+
+def _sample_result(reason: FallbackReason) -> CarbonCurveResult:
+    return CarbonCurveResult(
+        values=sample_carbon_curve(),
+        source="gb_sample_profile",
+        source_label="GB sample profile",
+        is_fallback=True,
+        fallback_reason=reason,
+    )
+
+
+def _unavailable_result(reason: FallbackReason) -> CarbonCurveResult:
+    return CarbonCurveResult(
+        values=[],
+        source="unavailable",
+        source_label="Carbon data unavailable",
+        is_fallback=True,
+        fallback_reason=reason,
+    )
+
+
+def provider(region: dict) -> CarbonCurveResult:
+    """Return a 48-slot curve with provenance, cached without losing identity."""
     key = region["id"]
     now = time.monotonic()
     cached = _cache.get(key)
     if cached and cached[0] > now:
-        return cached[1], cached[2]
+        return cached[1]
+    source_kind = region.get("carbon_source")
     try:
-        source_kind = region["carbon_source"]
         if source_kind == "gb_carbon_intensity":
-            curve, source = _gb_curve(region)
+            result = _gb_curve(region)
         elif source_kind == "eirgrid_ni":
-            curve, source = _ni_curve(region)
+            result = _ni_curve(region)
         else:
-            curve, source = sample_carbon_curve(), "sample"
-    except Exception:  # noqa: BLE001 - a feed outage must never break the API
-        curve, source = sample_carbon_curve(), "sample"
-    _cache[key] = (now + _TTL_SECONDS, curve, source)
-    return curve, source
+            result = _unavailable_result("unsupported_source")
+    except Exception as exc:  # noqa: BLE001 - safe, typed fallback is intentional
+        reason = _fallback_reason(exc)
+        result = (
+            _sample_result(reason)
+            if source_kind == "gb_carbon_intensity"
+            else _unavailable_result(reason)
+        )
+    _cache[key] = (now + _TTL_SECONDS, result)
+    return result
 
 
 def clear_cache() -> None:

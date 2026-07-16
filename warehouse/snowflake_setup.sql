@@ -1,4 +1,4 @@
--- Snowflake bootstrap for After Midnight.
+-- Snowflake bootstrap for Community Energy Flex.
 -- Run once as a role that can create databases/warehouses (e.g. SYSADMIN).
 -- The dbt project (target: snowflake) then builds STAGING/MARTS on top.
 
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS MONITORING.PIPELINE_RUNS (
 CREATE TABLE IF NOT EXISTS MONITORING.OPTIMISATION_QUALITY (
     run_id STRING, objective STRING, task_count INTEGER,
     total_cost_saving_p FLOAT, total_carbon_saving_g FLOAT,
-    avg_confidence FLOAT, constraint_violations INTEGER, recorded_at TIMESTAMP_TZ
+    avg_robustness FLOAT, constraint_violations INTEGER, recorded_at TIMESTAMP_TZ
 );
 
 CREATE TABLE IF NOT EXISTS MONITORING.DATA_FRESHNESS (

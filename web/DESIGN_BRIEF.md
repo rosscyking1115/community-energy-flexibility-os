@@ -1,4 +1,4 @@
-# Design brief — After Midnight website
+# Design brief — Community Energy Flex website
 
 This brief is the *why and how* for the visual build. The *what* (screens, flows,
 data contract) lives in `web/UI_SPEC.md` — read that first and treat it as the
@@ -15,7 +15,7 @@ half-hourly prices, and a typical-day carbon profile for Northern Ireland.
 
 It is **decision support, not automation**: it recommends windows, shows the
 saving versus the user's own baseline habit, and is honest about uncertainty
-(confidence bands, caveats, a safety statement on every result).
+(robustness bands, caveats, a safety statement on every result).
 
 ## 2. Audience & tone
 
@@ -31,7 +31,7 @@ saving versus the user's own baseline habit, and is honest about uncertainty
 
 The design should feel like a **trustworthy document, not a marketing site**.
 
-- **Numbers are the interface.** Savings, times, rates, confidence — set them
+- **Numbers are the interface.** Savings, times, rates, robustness — set them
   in tabular/monospaced numerals, give them typographic priority, and always
   pair each number with its basis (tariff + carbon source) per the
   score-beside-fact rule in UI_SPEC.
@@ -64,7 +64,7 @@ The design should feel like a **trustworthy document, not a marketing site**.
 5. Sources footnoted (NESO Carbon Intensity, Octopus, EirGrid, appliance notes).
 6. Explainability as tooltips/popovers, not a separate docs page.
 7. Regional carbon is zonal — never imply postcode precision; label NI as
-   typical-profile (`has_live_forecast === false`).
+   typical-profile (`supports_live_forecast === false`).
 8. Designed loading / empty / error states in product voice; surface the BFF's
    friendly 503 message, never a crash.
 

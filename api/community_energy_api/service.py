@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from datetime import time
 
+from community_energy_api.carbon import CarbonCurveResult
 from community_energy_api.models import (
     OptimiseRequest,
     OptimiseResponse,
@@ -43,7 +44,7 @@ def _to_slot(hhmm: str | None, *, end: bool = False) -> int | None:
 
 
 def build_tariff(spec: TariffSpec) -> tuple[Tariff, bool]:
-    """Return (tariff, is_manual). is_manual feeds the confidence model."""
+    """Return (tariff, is_manual). is_manual feeds the robustness heuristic."""
     if spec.kind == "flat":
         if spec.unit_rate_p is None:
             raise ValueError("flat tariff needs unit_rate_p")
@@ -88,11 +89,11 @@ def build_tasks(specs: list[TaskSpec]) -> list[Task]:
 
 
 def run_optimise(
-    req: OptimiseRequest, carbon_curve: list[float], carbon_source: str, region_name: str
+    req: OptimiseRequest, carbon: CarbonCurveResult, region_name: str
 ) -> OptimiseResponse:
     tariff, is_manual = build_tariff(req.tariff)
     tasks = build_tasks(req.tasks)  # raises ValueError on invalid constraints
-    slots = build_planning_slots(carbon_curve, tariff)
+    slots = build_planning_slots(carbon.values, tariff)
     objective = Objective(req.objective)
     weights = (
         ObjectiveWeights(cost=req.cost_weight, carbon=1.0 - req.cost_weight)
@@ -101,11 +102,34 @@ def run_optimise(
     )
     schedule = optimise(tasks, slots, objective, weights, tariff_is_manual=is_manual)
     summary = build_action_summary(schedule)
+    price_is_live = req.tariff.kind == "agile"
+    price_source = "octopus_agile_live" if price_is_live else "user_entered_tariff"
+    tariff_labels = {
+        "flat": "flat",
+        "economy7": "Economy 7",
+        "manual_half_hourly": "half-hourly",
+    }
+    price_source_label = (
+        "Octopus Agile published rates"
+        if price_is_live
+        else f"User-entered {tariff_labels[req.tariff.kind]} tariff"
+    )
 
     return OptimiseResponse(
         objective=objective.value,
         region=region_name,
-        carbon_source=carbon_source,
+        carbon_source=carbon.source,
+        carbon_source_label=carbon.source_label,
+        retrieved_at_utc=carbon.retrieved_at_utc,
+        valid_from_utc=carbon.valid_from_utc,
+        valid_to_utc=carbon.valid_to_utc,
+        is_live_forecast=carbon.is_live_forecast,
+        is_fallback=carbon.is_fallback,
+        fallback_reason=carbon.fallback_reason,
+        price_source=price_source,
+        price_source_label=price_source_label,
+        price_is_live=price_is_live,
+        price_unavailable_reason=None,
         total_cost_saving_p=summary.total_cost_saving_p,
         total_carbon_saving_g=summary.total_carbon_saving_g,
         tasks=[
@@ -116,8 +140,10 @@ def run_optimise(
                 baseline_window=ln.baseline_window,
                 cost_saving_p=ln.cost_saving_p,
                 carbon_saving_g=ln.carbon_saving_g,
-                confidence=next(t.confidence for t in schedule.tasks if t.task_id == ln.task_id),
-                confidence_band=ln.confidence_band,
+                robustness_score=next(
+                    t.robustness_score for t in schedule.tasks if t.task_id == ln.task_id
+                ),
+                robustness_band=ln.robustness_band,
                 caveat=ln.caveat,
             )
             for ln in summary.lines

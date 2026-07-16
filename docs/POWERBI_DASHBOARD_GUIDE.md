@@ -51,7 +51,7 @@ Then:
 
 **Page 1 — Executive Summary.** Cards: `Total Cost Saving (GBP)`,
 `Total Carbon Saving (kg)`, `Peak Slots Avoided`, `Tasks Optimised`,
-`Avg Recommendation Confidence`.
+`Avg Recommendation Robustness`.
 
 **Page 2 — Cost & Carbon Timeline.** Line chart of `Total Cost Saving (GBP)`
 over `dim_date[full_date]` (measures on the star — the `rpt_*` marts stay out
@@ -64,8 +64,8 @@ date-range slicer.
 **Page 4 — Community Comparison.** `rpt_monthly_community_savings` by
 `dim_community[community_name]`; `Households Participating`; average savings.
 
-**Page 5 — Recommendation Quality.** `Avg Recommendation Confidence` distribution;
-`Trusted Cost Saving (GBP)` vs total (shows how much saving is high-confidence);
+**Page 5 — Recommendation Quality.** `Avg Recommendation Robustness` distribution;
+`Robust Cost Saving (GBP)` vs total (shows how much saving has a strong robustness indicator);
 data-freshness and constraint-violation indicators from `MONITORING.*`.
 
 ## 3. Apply the theme

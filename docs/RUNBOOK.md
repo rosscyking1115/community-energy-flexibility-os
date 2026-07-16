@@ -49,7 +49,7 @@ The pipeline degrades gracefully — it never leaves users with nothing:
 | Carbon API unreachable | Falls back to the **last good schedule** (`status="fallback"`), logs it. |
 | Forecast missing for tomorrow (< 48 slots) | `DataValidationError`; run recorded `failed`; last good served if available. |
 | No last good schedule yet | `status="failed"`, no schedule; investigate the fetch/source. |
-| Tariff entered wrong | Optimiser still runs; confidence drops for manual tariffs and the caveat says so. |
+| Tariff entered wrong | Optimiser still runs; robustness drops for manual tariffs and the caveat says so. |
 | Optimiser infeasible (LP, tight peak cap) | `InfeasibleScheduleError` — relax `max_load_kw` or the task deadlines. |
 | Stale data | `dbt source freshness` warns > 6 h / errors > 12 h on the carbon RAW table. |
 

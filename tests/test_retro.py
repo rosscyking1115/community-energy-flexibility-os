@@ -18,20 +18,21 @@ def _schedule_and_slots(curve):
     return schedule, slots
 
 
-def test_perfect_forecast_realises_exactly():
+def test_perfect_forecast_matches_conditional_ex_post_evaluation():
     curve = sample_carbon_curve()
     schedule, _ = _schedule_and_slots(curve)
-    # actuals == forecast -> the plan realises exactly what was promised
+    # Later curve == forecast -> conditional re-scoring matches the forecast.
     actual_slots = build_planning_slots(curve, TARIFF)
     report = evaluate_retrospective(
         sample_tasks(), schedule, actual_slots,
         forecast_curve=curve, actual_curve=curve,
     )
     assert report.carbon_forecast_mae == 0.0
-    assert report.realised_carbon_fraction == pytest.approx(1.0)
-    assert report.total_actual_carbon_saving_g == pytest.approx(
+    assert report.conditional_ex_post_carbon_fraction == pytest.approx(1.0)
+    assert report.total_conditional_ex_post_carbon_saving_g == pytest.approx(
         report.total_forecast_carbon_saving_g
     )
+    assert report.schedule_adherence_observed is False
 
 
 def test_forecast_error_metrics():
@@ -43,7 +44,7 @@ def test_forecast_error_metrics():
     assert bias == pytest.approx(0.0)
 
 
-def test_worse_actuals_reduce_realised_saving():
+def test_worse_later_curve_reduces_conditional_ex_post_saving():
     curve = sample_carbon_curve()
     schedule, _ = _schedule_and_slots(curve)
     # Overnight actuals turned out dirtier than forecast: flatten the curve so
@@ -55,6 +56,6 @@ def test_worse_actuals_reduce_realised_saving():
         forecast_curve=curve, actual_curve=flat_actual,
     )
     # A flat actual curve means shifting saved no carbon in reality.
-    assert report.total_actual_carbon_saving_g == pytest.approx(0.0, abs=1e-6)
-    assert report.realised_carbon_fraction < 1.0
+    assert report.total_conditional_ex_post_carbon_saving_g == pytest.approx(0.0, abs=1e-6)
+    assert report.conditional_ex_post_carbon_fraction < 1.0
     assert report.carbon_forecast_mae > 0.0

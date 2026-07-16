@@ -36,7 +36,7 @@ class OptimisationQuality:
     task_count: int
     total_cost_saving_p: float
     total_carbon_saving_g: float
-    avg_confidence: float
+    avg_robustness: float
     constraint_violations: int
     recorded_at: str = ""
 

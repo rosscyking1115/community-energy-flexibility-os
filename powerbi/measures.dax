@@ -1,4 +1,4 @@
-// Power BI DAX measures for the After Midnight dashboard.
+// Power BI DAX measures for the Community Energy Flex dashboard.
 // Written per the dax-optimization guidance: VAR for shared sub-expressions,
 // DIVIDE for safe division, COUNTROWS over COUNT, explicit BLANK handling.
 // Model: fct_daily_savings (fact) related to dim_date / dim_device /
@@ -31,8 +31,8 @@ Households Participating =
 DISTINCTCOUNT ( fct_daily_savings[household_id] )
 
 // Format: 0.00
-Avg Recommendation Confidence =
-AVERAGE ( fct_daily_savings[confidence] )
+Avg Recommendation Robustness =
+AVERAGE ( fct_daily_savings[robustness_score] )
 
 // --- Ratio: safe division against the baseline ------------------------------
 
@@ -58,18 +58,18 @@ VAR PriorSaving =
 RETURN
     DIVIDE ( CurrentSaving - PriorSaving, PriorSaving )
 
-// --- Confidence-gated saving: only count High/Medium recommendations --------
+// --- Robustness-gated saving: only count Strong/Mixed recommendations -------
 
 // Format: £#,##0.00
-Trusted Cost Saving (GBP) =
+Robust Cost Saving (GBP) =
 CALCULATE (
     [Total Cost Saving (GBP)],
-    KEEPFILTERS ( fct_daily_savings[confidence] >= 0.5 )
+    KEEPFILTERS ( fct_daily_savings[robustness_score] >= 0.5 )
 )
 
-// Share of the saving that rests on High/Medium-confidence recommendations -
+// Share of the saving that rests on Strong/Mixed robustness indicators -
 // the "how much of this can we stand behind?" number for the Quality page.
 // Returns BLANK when there is no saving, never a #DIV/0.
 // Format: 0.0%
-Trusted Saving % =
-DIVIDE ( [Trusted Cost Saving (GBP)], [Total Cost Saving (GBP)] )
+Robust Saving % =
+DIVIDE ( [Robust Cost Saving (GBP)], [Total Cost Saving (GBP)] )

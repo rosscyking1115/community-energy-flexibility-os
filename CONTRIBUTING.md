@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in After Midnight. Contributions of all
+Thanks for your interest in Community Energy Flex. Contributions of all
 kinds are welcome — bug reports, docs, tariff/region support, optimiser
 improvements, and more.
 

@@ -31,7 +31,7 @@ from community_energy_flex.monitoring.store import (
     OptimisationQuality,
     PipelineRun,
 )
-from community_energy_flex.optimisation.metrics import average_confidence, constraint_violations
+from community_energy_flex.optimisation.metrics import average_robustness, constraint_violations
 from community_energy_flex.optimisation.planning import build_planning_slots
 from community_energy_flex.optimisation.rule_based import optimise
 
@@ -180,7 +180,7 @@ def run_daily_pipeline(
                 task_count=len(schedule.tasks),
                 total_cost_saving_p=round(schedule.total_cost_saving_p, 3),
                 total_carbon_saving_g=round(schedule.total_carbon_saving_g, 3),
-                avg_confidence=round(average_confidence(schedule), 3),
+                avg_robustness=round(average_robustness(schedule), 3),
                 constraint_violations=constraint_violations(config.tasks, schedule),
             )
         )

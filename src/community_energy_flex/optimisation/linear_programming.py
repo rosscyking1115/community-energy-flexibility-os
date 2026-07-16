@@ -23,16 +23,16 @@ from community_energy_flex.domain.models import (
     Task,
 )
 from community_energy_flex.optimisation.baseline import baseline_placement
-from community_energy_flex.optimisation.confidence import compute_confidence
 from community_energy_flex.optimisation.energy_model import all_placements
 from community_energy_flex.optimisation.feasible_windows import feasible_start_indices
 from community_energy_flex.optimisation.objective import score_placements
+from community_energy_flex.optimisation.robustness import compute_robustness
 
 _SLOT_HOURS = 0.5
 
 
 def _band(value: float) -> str:
-    return "High" if value >= 0.75 else "Medium" if value >= 0.5 else "Low"
+    return "Strong" if value >= 0.75 else "Mixed" if value >= 0.5 else "Fragile"
 
 
 class InfeasibleScheduleError(RuntimeError):
@@ -139,19 +139,19 @@ def optimise_lp(
         task = tasks_by_id[tid]
         place = placements[tid][chosen]
         base = baseline_placement(task, slots)
-        conf = compute_confidence(
+        robustness = compute_robustness(
             sorted_scores[tid],
             horizon_hours=chosen * _SLOT_HOURS,
-            using_actual_carbon=using_actual_carbon,
+            using_measured_carbon=using_actual_carbon,
             tariff_is_manual=tariff_is_manual,
             single_option=len(starts) == 1,
         )
         # If a shared constraint (peak-load) forced this task off its own best
-        # slot, don't report the landscape's high confidence - say so instead.
+        # slot, don't report the landscape's strongest robustness - say so instead.
         if chosen != best_start[tid]:
-            capped = min(conf.value, 0.6)
-            conf = replace(
-                conf,
+            capped = min(robustness.value, 0.6)
+            robustness = replace(
+                robustness,
                 value=capped,
                 band=_band(capped),
                 caveat="Constrained by the peak-load limit - not the standalone-best time.",
@@ -163,7 +163,9 @@ def optimise_lp(
                 cost_p=place.cost_p, carbon_g=place.carbon_g,
                 baseline_start_index=base.start_index,
                 baseline_cost_p=base.cost_p, baseline_carbon_g=base.carbon_g,
-                confidence=conf.value, confidence_band=conf.band, caveat=conf.caveat,
+                robustness_score=robustness.value,
+                robustness_band=robustness.band,
+                caveat=robustness.caveat,
             )
         )
 

@@ -1,10 +1,9 @@
-"""The forecast-vs-actual retro loop: did yesterday's plan actually help?
+"""Conditional ex-post evaluation of a schedule against a later carbon curve.
 
 The Carbon Intensity API returns a *forecast* and, once a period has passed, the
-measured *actual*. This module re-scores a schedule that was built on the
-forecast against what actually happened, so the tool can say honestly how much it
-really saved - and how good its forecast was. This is what turns "we think this
-saves money" into evidence.
+measured grid *actual*. This module re-scores a schedule that was built on the
+forecast against that later grid curve. It does not observe whether a user ran
+the task or how much energy the task consumed.
 """
 
 from __future__ import annotations
@@ -19,17 +18,17 @@ from community_energy_flex.optimisation.energy_model import evaluate_placement
 class RetroTaskResult:
     task_id: str
     forecast_cost_saving_p: float
-    actual_cost_saving_p: float
+    conditional_ex_post_cost_saving_p: float
     forecast_carbon_saving_g: float
-    actual_carbon_saving_g: float
+    conditional_ex_post_carbon_saving_g: float
 
     @property
     def still_saved_cost(self) -> bool:
-        return self.actual_cost_saving_p >= -1e-9
+        return self.conditional_ex_post_cost_saving_p >= -1e-9
 
     @property
     def still_saved_carbon(self) -> bool:
-        return self.actual_carbon_saving_g >= -1e-9
+        return self.conditional_ex_post_carbon_saving_g >= -1e-9
 
 
 @dataclass(frozen=True)
@@ -37,37 +36,43 @@ class RetroReport:
     results: list[RetroTaskResult]
     carbon_forecast_mae: float
     carbon_forecast_bias: float
+    schedule_adherence_observed: bool = False
 
     @property
     def total_forecast_cost_saving_p(self) -> float:
         return sum(r.forecast_cost_saving_p for r in self.results)
 
     @property
-    def total_actual_cost_saving_p(self) -> float:
-        return sum(r.actual_cost_saving_p for r in self.results)
+    def total_conditional_ex_post_cost_saving_p(self) -> float:
+        return sum(r.conditional_ex_post_cost_saving_p for r in self.results)
 
     @property
     def total_forecast_carbon_saving_g(self) -> float:
         return sum(r.forecast_carbon_saving_g for r in self.results)
 
     @property
-    def total_actual_carbon_saving_g(self) -> float:
-        return sum(r.actual_carbon_saving_g for r in self.results)
+    def total_conditional_ex_post_carbon_saving_g(self) -> float:
+        return sum(r.conditional_ex_post_carbon_saving_g for r in self.results)
 
-    def _realised(self, actual: float, forecast: float) -> float:
+    @staticmethod
+    def _conditional_ex_post_fraction(later: float, forecast: float) -> float:
         if abs(forecast) < 1e-9:
-            return 1.0 if abs(actual) < 1e-9 else 0.0
-        return actual / forecast
+            return 1.0 if abs(later) < 1e-9 else 0.0
+        return later / forecast
 
     @property
-    def realised_cost_fraction(self) -> float:
-        """Actual cost saving as a fraction of what was forecast (1.0 = spot on)."""
-        return self._realised(self.total_actual_cost_saving_p, self.total_forecast_cost_saving_p)
+    def conditional_ex_post_cost_fraction(self) -> float:
+        """Later-curve cost saving divided by forecast saving, conditional on adherence."""
+        return self._conditional_ex_post_fraction(
+            self.total_conditional_ex_post_cost_saving_p,
+            self.total_forecast_cost_saving_p,
+        )
 
     @property
-    def realised_carbon_fraction(self) -> float:
-        return self._realised(
-            self.total_actual_carbon_saving_g, self.total_forecast_carbon_saving_g
+    def conditional_ex_post_carbon_fraction(self) -> float:
+        return self._conditional_ex_post_fraction(
+            self.total_conditional_ex_post_carbon_saving_g,
+            self.total_forecast_carbon_saving_g,
         )
 
 
@@ -109,9 +114,9 @@ def evaluate_retrospective(
             RetroTaskResult(
                 task_id=st.task_id,
                 forecast_cost_saving_p=st.cost_saving_p,
-                actual_cost_saving_p=actual_base.cost_p - actual_opt.cost_p,
+                conditional_ex_post_cost_saving_p=actual_base.cost_p - actual_opt.cost_p,
                 forecast_carbon_saving_g=st.carbon_saving_g,
-                actual_carbon_saving_g=actual_base.carbon_g - actual_opt.carbon_g,
+                conditional_ex_post_carbon_saving_g=actual_base.carbon_g - actual_opt.carbon_g,
             )
         )
 

@@ -1,13 +1,10 @@
-"""The forecast-vs-actual retro loop, made visible: "did yesterday's plan
-actually save?"
+"""Deterministic synthetic forecast-error stress test.
 
 A schedule is committed on the *forecast*. Then the day happens. This runs the
 same four community-centre loads once, then re-scores that fixed plan against
-several ways the day could actually turn out, and prints what was *realised*
-versus what was forecast — the check that turns "we think this saves" into
-evidence.
+five constructed later curves and prints conditional ex-post schedule metrics.
 
-The actuals here are **simulated** to exercise the loop (we don't store the
+The later curves are **simulated** to exercise the loop (we don't store the
 forecast we made on a past day, so a true historical replay isn't possible); the
 retro maths is the real engine (`monitoring/retro.py`). Cost is left certain on
 purpose: Agile prices are published day-ahead, so the forecast *risk* is carbon,
@@ -67,18 +64,22 @@ def main() -> int:
     schedule = optimise(TASKS, slots, Objective.BALANCED, tariff_is_manual=False)
     forecast_g = schedule.total_carbon_saving_g
 
-    print('Forecast-vs-actual retro - "did yesterday\'s plan actually save?"\n')
+    print("Synthetic forecast-error stress test\n")
+    print("  Source: built-in sample carbon curve (not a stored forecast vintage).")
+    print("  Transformations: exact, +8%, -6%, seeded +/-15% noise, and a 1h shift.")
+    print("  Random seed: 7. Schedule adherence and meter consumption are not observed.")
+    print("  Ratios are constructed-scenario diagnostics, not empirical performance.\n")
     print(f"  Plan committed on the forecast: {forecast_g:.0f} g CO2 saving expected"
           f" across {len(schedule.tasks)} loads.\n")
 
     header = (
         f"  {'How the day turned out':30} {'forecast':>9} {'actual':>9}"
-        f" {'realised':>9} {'fc MAE':>8}  {'still saved?':>12}"
+        f" {'cond. ratio':>11} {'fc MAE':>8}  {'still saved?':>12}"
     )
     print(header)
     print("  " + "-" * (len(header) - 2))
 
-    realised_pcts = []
+    conditional_ratios = []
     still_saved = 0
     for name, actual_fn in SCENARIOS:
         actual = actual_fn(forecast)  # type: ignore[operator]
@@ -86,22 +87,22 @@ def main() -> int:
         retro = evaluate_retrospective(
             TASKS, schedule, actual_slots, forecast_curve=forecast, actual_curve=actual
         )
-        pct = retro.realised_carbon_fraction * 100
-        realised_pcts.append(pct)
-        saved = retro.total_actual_carbon_saving_g >= 0
+        pct = retro.conditional_ex_post_carbon_fraction * 100
+        conditional_ratios.append(pct)
+        saved = retro.total_conditional_ex_post_carbon_saving_g >= 0
         still_saved += int(saved)
         print(
             f"  {name:30} {retro.total_forecast_carbon_saving_g:>7.0f} g"
-            f" {retro.total_actual_carbon_saving_g:>7.0f} g"
+            f" {retro.total_conditional_ex_post_carbon_saving_g:>7.0f} g"
             f" {pct:>8.0f}%"
             f" {retro.carbon_forecast_mae:>6.0f} g"
             f"  {'yes' if saved else 'no':>12}"
         )
 
-    avg = sum(realised_pcts) / len(realised_pcts)
+    avg = sum(conditional_ratios) / len(conditional_ratios)
     print(
-        f"\n  Across {len(SCENARIOS)} scenarios: realised {avg:.0f}% of the forecast"
-        f" carbon saving on average; the plan still saved carbon in"
+        f"\n  Across {len(SCENARIOS)} constructed scenarios: conditional ex-post ratio "
+        f"averaged {avg:.0f}% of forecast saving; the fixed schedule saved carbon in"
         f" {still_saved}/{len(SCENARIOS)}."
     )
     print("  Cost is unchanged in every row - Agile prices are known day-ahead, so"

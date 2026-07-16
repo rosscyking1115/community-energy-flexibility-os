@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from community_energy_flex.data_sources.carbon_intensity import (
     CarbonIntensityClient,
+    _next_local_midnight_utc,
     carbon_curve,
     parse_intensity_periods,
 )
@@ -47,6 +50,7 @@ def test_parses_national_periods_with_actuals():
     assert len(slots) == 2
     assert slots[0].best_estimate == 115  # prefers actual
     assert slots[1].best_estimate == 130  # falls back to forecast
+    assert slots[0].start.tzinfo is UTC
 
 
 def test_parses_nested_regional_shape():
@@ -76,12 +80,18 @@ def test_regional_by_id_builds_forecast_url_with_from():
         return REGIONAL
 
     client = CarbonIntensityClient(fetch=fake)
-    slots = client.regional_forecast_by_id(13)
+    slots = client.regional_forecast_by_id(13, datetime(2026, 7, 3, tzinfo=UTC))
     # the forward endpoint requires a {from} timestamp in the path
     assert "/regional/intensity/" in seen["url"]
     assert "/fw24h/regionid/13" in seen["url"]
     assert "T00:00Z" in seen["url"]  # next-midnight aligned
     assert len(slots) == 1
+
+
+def test_next_uk_midnight_accounts_for_bst():
+    now = datetime(2026, 7, 15, 12, tzinfo=UTC)
+
+    assert _next_local_midnight_utc(now) == datetime(2026, 7, 15, 23, tzinfo=UTC)
 
 
 def test_carbon_curve_pads_to_requested_length():

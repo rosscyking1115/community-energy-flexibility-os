@@ -1,9 +1,8 @@
-"""FastAPI app. Keyless /v1/* endpoints wrapping the engine and reference data.
+"""FastAPI app for the Community Energy Flex decision-systems reference.
 
-The carbon feed is behind a provider seam (``carbon_provider``): today it serves
-a sample curve so the whole path works offline; wiring the live Carbon Intensity
-forecast (GB) and the EirGrid typical-day profile (NI) is the next step, with no
-change to the endpoints.
+GB requests use the regional Carbon Intensity forecast when available;
+Northern Ireland uses a labelled EirGrid typical-day profile. Every forecast
+and optimisation response carries the provenance of the curve actually used.
 """
 
 from __future__ import annotations
@@ -16,6 +15,7 @@ from community_energy_api import reference
 from community_energy_api.agile import PRODUCT as _AGILE_PRODUCT
 from community_energy_api.agile import AgileUnavailable
 from community_energy_api.agile import provider as _live_agile
+from community_energy_api.carbon import CarbonCurveResult
 from community_energy_api.carbon import provider as _live_carbon
 from community_energy_api.models import (
     AgileTariffOut,
@@ -28,21 +28,21 @@ from community_energy_api.models import (
 from community_energy_api.service import run_optimise
 
 app = FastAPI(
-    title="After Midnight API",
-    version="0.1.0",
+    title="Community Energy Flex API",
+    version="0.2.0",
     description="When to run flexible electricity loads to cut cost and carbon. "
     "Planning advice only - no guaranteed savings.",
 )
 
 # Live feeds, module-level so tests can swap them for offline stubs.
-carbon_provider: Callable[[dict], tuple[list[float], str]] = _live_carbon
+carbon_provider: Callable[[dict], CarbonCurveResult] = _live_carbon
 agile_provider: Callable[[dict], tuple[list[float], str]] = _live_agile
 
 
 def _region_out(r: dict) -> RegionOut:
     return RegionOut(
         id=r["id"], name=r["name"], nation=r["nation"], carbon_source=r["carbon_source"],
-        has_live_forecast=r["carbon_source"] == "gb_carbon_intensity",
+        supports_live_forecast=r["carbon_source"] == "gb_carbon_intensity",
         supports_agile=r.get("agile_gsp") is not None,
     )
 
@@ -92,25 +92,45 @@ def forecast(region_id: str) -> ForecastOut:
     region = reference.region_by_id(region_id)
     if region is None:
         raise HTTPException(status_code=404, detail=f"Unknown region '{region_id}'")
-    carbon, carbon_source = carbon_provider(region)
+    carbon = carbon_provider(region)
     price_p: list[float] | None = None
     agile_day: str | None = None
     agile_product: str | None = None
+    price_source: str | None = None
+    price_source_label: str | None = None
+    price_is_live = False
+    price_unavailable_reason: str | None = (
+        None if region.get("agile_gsp") is not None else "not_supported"
+    )
     if region.get("agile_gsp") is not None:
         try:
             price_p, agile_day = agile_provider(region)
             agile_product = _AGILE_PRODUCT
+            price_source = "octopus_agile_live"
+            price_source_label = "Octopus Agile published rates"
+            price_is_live = True
         except AgileUnavailable:
             price_p = None  # region lists a GSP but no prices published yet
+            price_unavailable_reason = "not_published"
     return ForecastOut(
         region=region["name"],
         region_id=region["id"],
-        carbon_g=carbon,
-        carbon_source=carbon_source,
+        carbon_g=carbon.values,
+        carbon_source=carbon.source,
+        carbon_source_label=carbon.source_label,
+        retrieved_at_utc=carbon.retrieved_at_utc,
+        valid_from_utc=carbon.valid_from_utc,
+        valid_to_utc=carbon.valid_to_utc,
+        is_live_forecast=carbon.is_live_forecast,
+        is_fallback=carbon.is_fallback,
+        fallback_reason=carbon.fallback_reason,
         price_p=price_p,
         agile_day=agile_day,
         agile_product=agile_product,
-        has_live_forecast=region["carbon_source"] == "gb_carbon_intensity",
+        price_source=price_source,
+        price_source_label=price_source_label,
+        price_is_live=price_is_live,
+        price_unavailable_reason=price_unavailable_reason,
         supports_agile=region.get("agile_gsp") is not None,
     )
 
@@ -126,8 +146,10 @@ def optimise_schedule(req: OptimiseRequest) -> OptimiseResponse:
             req.tariff.prices_p, _ = agile_provider(region)
         except AgileUnavailable as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-    curve, source = carbon_provider(region)
+    carbon = carbon_provider(region)
+    if carbon.source == "unavailable":
+        raise HTTPException(status_code=503, detail="Carbon data is unavailable for this region")
     try:
-        return run_optimise(req, curve, source, region["name"])
+        return run_optimise(req, carbon, region["name"])
     except ValueError as exc:  # invalid tariff/task constraints
         raise HTTPException(status_code=422, detail=str(exc)) from exc

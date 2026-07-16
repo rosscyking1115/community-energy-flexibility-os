@@ -6,6 +6,8 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from community_energy_api import main as api_main  # noqa: E402
+from community_energy_api.carbon import CarbonCurveResult  # noqa: E402
 from community_energy_api.main import app  # noqa: E402
 
 client = TestClient(app)
@@ -19,9 +21,9 @@ def test_regions_cover_all_uk_including_ni():
     regions = client.get("/v1/regions").json()
     assert len(regions) == 15  # 14 GB + NI
     ni = next(r for r in regions if r["id"] == "northern-ireland")
-    assert ni["has_live_forecast"] is False and ni["supports_agile"] is False
+    assert ni["supports_live_forecast"] is False and ni["supports_agile"] is False
     london = next(r for r in regions if r["id"] == "london")
-    assert london["has_live_forecast"] is True and london["supports_agile"] is True
+    assert london["supports_live_forecast"] is True and london["supports_agile"] is True
 
 
 def test_postcode_resolves_to_region():
@@ -51,6 +53,14 @@ def test_optimise_returns_a_schedule():
     data = resp.json()
     assert data["region"] == "South West England"
     assert len(data["tasks"]) == 1
+    assert "robustness_score" in data["tasks"][0]
+    assert "confidence" not in data["tasks"][0]
+    assert data["carbon_source"] in {
+        "gb_live_forecast", "gb_sample_profile", "ni_eirgrid_typical_profile"
+    }
+    assert data["price_source"] == "user_entered_tariff"
+    assert data["price_source_label"] == "User-entered Economy 7 tariff"
+    assert data["price_is_live"] is False
     assert "planning recommendations only" in data["safety_statement"]
 
 
@@ -73,16 +83,31 @@ def test_optimise_with_agile_tariff_fetches_prices():
     }
     resp = client.post("/v1/optimise", json=body)
     assert resp.status_code == 200
-    assert len(resp.json()["tasks"]) == 1
+    data = resp.json()
+    assert len(data["tasks"]) == 1
+    assert data["price_source"] == "octopus_agile_live"
+    assert data["price_source_label"] == "Octopus Agile published rates"
+    assert data["price_is_live"] is True
 
 
-def test_forecast_gb_has_carbon_and_price():
+def test_forecast_gb_has_live_provenance_and_price(monkeypatch):
+    monkeypatch.setattr(
+        api_main,
+        "carbon_provider",
+        lambda region: CarbonCurveResult(
+            values=[100.0] * 48,
+            source="gb_live_forecast",
+            source_label="NESO / Carbon Intensity regional forecast",
+        ),
+    )
     resp = client.get("/v1/forecast/london")
     assert resp.status_code == 200
     data = resp.json()
     assert data["region"] == "London"
     assert len(data["carbon_g"]) == 48
-    assert data["has_live_forecast"] is True and data["supports_agile"] is True
+    assert data["is_live_forecast"] is True and data["supports_agile"] is True
+    assert data["is_fallback"] is False
+    assert data["carbon_source"] == "gb_live_forecast"
     assert data["price_p"] is not None and len(data["price_p"]) == 48
     assert data["agile_product"]
 
@@ -94,6 +119,38 @@ def test_forecast_ni_has_carbon_but_no_price():
     assert len(data["carbon_g"]) == 48
     assert data["supports_agile"] is False
     assert data["price_p"] is None
+    assert data["price_unavailable_reason"] == "not_supported"
+
+
+def test_optimise_returns_503_when_region_carbon_is_unavailable(monkeypatch):
+    monkeypatch.setattr(
+        api_main,
+        "carbon_provider",
+        lambda region: CarbonCurveResult(
+            values=[],
+            source="unavailable",
+            source_label="Carbon data unavailable",
+            is_fallback=True,
+            fallback_reason="invalid_payload",
+        ),
+    )
+    body = {
+        "region_id": "northern-ireland",
+        "tariff": {"kind": "flat", "unit_rate_p": 28},
+        "tasks": [
+            {
+                "name": "Washing",
+                "device_type": "Washing machine",
+                "energy_kwh": 0.9,
+                "duration_hours": 1.5,
+            }
+        ],
+    }
+
+    response = client.post("/v1/optimise", json=body)
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Carbon data is unavailable for this region"
 
 
 def test_forecast_unknown_region_404():

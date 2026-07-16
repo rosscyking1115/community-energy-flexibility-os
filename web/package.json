@@ -1,8 +1,8 @@
 {
   "name": "community-energy-flex-web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "After Midnight — the website (Next.js), wired to the public API.",
+  "description": "Community Energy Flex — a decision-systems reference website wired to the public API.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

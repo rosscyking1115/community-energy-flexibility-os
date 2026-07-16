@@ -15,7 +15,7 @@ select
     s.cost_saving_p,
     s.carbon_saving_g,
     s.peak_slots_avoided,
-    s.confidence
+    s.robustness_score
 from s
 join {{ ref('dim_date') }} d        on d.full_date = s.savings_date
 join {{ ref('dim_device') }} dev     on dev.device_type = s.device_type

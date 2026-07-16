@@ -13,6 +13,6 @@ select
     cast(cost_saving_p as double)        as cost_saving_p,
     cast(carbon_saving_g as double)      as carbon_saving_g,
     cast(peak_slots_avoided as integer)  as peak_slots_avoided,
-    cast(confidence as double)           as confidence,
-    cast(confidence_band as varchar)     as confidence_band
+    cast(robustness_score as double)     as robustness_score,
+    cast(robustness_band as varchar)     as robustness_band
 from src

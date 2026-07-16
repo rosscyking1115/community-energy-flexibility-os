@@ -1,10 +1,10 @@
-"""After Midnight - Streamlit decision app.
+"""Community Energy Flex - Streamlit decision app.
 
 Run with:  streamlit run app/streamlit_app.py
 
 Tell the app about your flexible appliances (in plain clock times), pick what to
 optimise for, and it recommends when to run each one - with a baseline
-comparison, savings, confidence, and a downloadable action report.
+comparison, savings, robustness, and a downloadable action report.
 
 Design notes: times are entered as clock times (not half-hour slot indices);
 inputs are batched in a form so the optimiser runs on submit, not on every
@@ -33,7 +33,7 @@ from community_energy_flex.optimisation.rule_based import optimise
 from community_energy_flex.reporting.summary import build_action_summary, format_text_report
 
 st.set_page_config(
-    page_title="After Midnight",
+    page_title="Community Energy Flex",
     page_icon=":material/bolt:",
     layout="wide",
 )
@@ -220,7 +220,7 @@ else:
     carbon = sample_carbon_curve()
 
 # --- Header + task form -----------------------------------------------------
-st.title("After Midnight")
+st.title("Community Energy Flex")
 st.caption(
     "Find the best times to run your flexible appliances to cut cost and carbon. "
     "This is planning advice - it never controls your appliances or guarantees savings."
@@ -286,7 +286,7 @@ elif submitted:
                         "Instead of": ln.baseline_window,
                         "Saves (p)": ln.cost_saving_p,
                         "Saves (g CO₂)": ln.carbon_saving_g,
-                        "Confidence": ln.confidence_band,
+                        "Robustness": ln.robustness_band,
                     }
                     for ln in summary.lines
                 ]
@@ -295,9 +295,9 @@ elif submitted:
             hide_index=True,
         )
 
-        with st.expander("How sure is this? (confidence & caveats)"):
+        with st.expander("How sensitive is this recommendation? (robustness & caveats)"):
             for ln in summary.lines:
-                st.markdown(f"**{ln.device_type}** ({ln.confidence_band}): {ln.caveat}")
+                st.markdown(f"**{ln.device_type}** ({ln.robustness_band}): {ln.caveat}")
             st.caption(summary.safety_statement)
 
         st.subheader("Take it with you")

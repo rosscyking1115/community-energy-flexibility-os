@@ -1,72 +1,65 @@
 # Methodology
 
-This document pins down the three things a decision-support tool must not leave
-vague: the **baseline**, the **cost/carbon maths**, and the **confidence** score.
+The engine answers a bounded question: given a flexible task, a half-hourly carbon curve, a tariff, and a feasible time window, which start time best matches the selected objective relative to an explicit baseline?
 
-## Slots
+## Planning unit and feasibility
 
-A planning day is 48 half-hour slots, indexed `0..47`. Slot `i` covers
-`[i·30min, (i+1)·30min)`. `08:00` is slot 16; `latest_finish` is *exclusive*
-(a task that must finish by 07:00 has `latest_finish = 14`).
+One slot is 30 minutes. A task defines energy, duration, earliest start, latest finish, and a preferred start. A candidate is feasible only when every occupied slot is inside the task window. LP/MILP mode can also enforce shared-capacity and overlap constraints.
 
-## Cost and carbon of a placement
+Energy is spread evenly across the occupied slots. This is a simplifying load-shape assumption, not device telemetry.
 
-Energy is spread evenly across a task's occupied slots: a task using `E` kWh over
-`d` slots draws `E/d` kWh per slot. For a placement over slots `[start, end)`:
+## Cost and carbon
 
-```
-cost_p   = Σ  (E/d) · unit_rate_p_per_kwh(slot)
-carbon_g = Σ  (E/d) · carbon_gco2_per_kwh(slot)
-```
+For slot `i`:
 
-**The standing charge is excluded from savings.** It is a fixed daily cost that
-does not depend on *when* a task runs, so folding it in would dilute and distort
-the shift-driven saving. It may still be shown for total-bill context.
-
-## Baseline (business as usual)
-
-Savings only mean something against a defined baseline. The baseline is each task
-run at its **natural slot**: its `preferred_start` if given, else its
-`earliest_start`, clamped into the feasible window. Savings are then:
-
-```
-cost_saving   = baseline_cost   − optimised_cost
-carbon_saving = baseline_carbon − optimised_carbon
+```text
+slot_energy_kwh = task_energy_kwh / duration_slots
+cost_p = sum(slot_energy_kwh * unit_rate_p_per_kwh[i])
+carbon_g = sum(slot_energy_kwh * carbon_g_per_kwh[i])
 ```
 
-Under a **flat** tariff the cost saving is correctly ~£0 — shifting time cannot
-change a flat unit rate. Cost savings come from time-of-use tariffs; carbon
-savings come from the carbon curve.
+Standing charges are excluded because shifting a task does not change them.
+
+## Baseline and savings
+
+The baseline is the same task at its feasible preferred start. It is not a population counterfactual or a claim about what a household would otherwise have done.
+
+```text
+estimated_cost_saving = baseline_cost - recommended_cost
+estimated_carbon_saving = baseline_carbon - recommended_carbon
+```
+
+Negative values remain visible. The optimiser does not turn an unfavourable comparison into a positive claim.
 
 ## Objectives
 
-Cost and carbon are min-max normalised to `0..1` across a task's own feasible
-placements, so objectives are comparable. Lower score is better.
+- **Cost:** minimise estimated task cost.
+- **Carbon:** minimise estimated task carbon.
+- **Balanced:** combine normalised cost and carbon ranks.
 
-| Objective | Score |
-|---|---|
-| `cheapest` | normalised cost |
-| `lowest_carbon` | normalised carbon |
-| `avoid_peak` | ½·peak-overlap + ½·normalised cost |
-| `balanced` | `(w_cost·cost + w_carbon·carbon + w_comfort·comfort) / Σw` |
+Ties are deterministic so identical inputs produce identical schedules.
 
-Ties break to the earliest start for determinism.
+## Robustness indicator
 
-## Confidence
+The indicator is the product of four bounded factors:
 
-Confidence is a product of four factors, each in `(0, 1]`, so any weak input
-drags the whole score down (the principle: *make uncertainty visible*).
+- decisiveness of the chosen window relative to alternatives;
+- forecast horizon;
+- carbon-data quality;
+- tariff-data quality.
 
-| Factor | Meaning | Value |
-|---|---|---|
-| **decisiveness** | how far the best option beats the *mean* feasible option (materiality `m` vs threshold 0.25) | `0.3 + 0.7·min(1, m/0.25)` |
-| **horizon** | forecasts far ahead are less reliable | `max(0.5, 1 − 0.02·(hours−12))` |
-| **data** | measured actual carbon beats a forecast | `1.0` actual / `0.85` forecast |
-| **tariff** | a hand-typed tariff is less certain | `1.0` known / `0.8` manual |
+It is banded **Strong**, **Mixed**, or **Fragile**. The exact formula is transparent in `optimisation/robustness.py`, but the result is not a probability and has not been calibrated against observed outcomes. Every result includes a caveat describing the limiting inputs.
 
-`confidence = decisiveness · horizon · data · tariff`, banded **High ≥ 0.75**,
-**Medium ≥ 0.5**, else **Low**. Decisiveness is measured against the *typical*
-option, not the adjacent runner-up: on a 48-slot day the next slot is always a
-near-tie, which would make every recommendation look falsely fragile. A genuinely
-flat landscape (every time equally good) is honestly low-decisiveness — the
-choice barely matters. The weakest factor becomes the plain-language caveat.
+## Conditional ex-post analysis
+
+The retro workflow replaces the planning carbon curve with a synthetic altered curve, then recomputes the scheduled and baseline windows. This provides a conditional ex-post comparison: *if both starts and the task load shape were as assumed, what would their relative carbon have been under that curve?*
+
+The workflow does not observe task execution. `schedule_adherence_observed` is therefore false. Its output is a synthetic stress test and must not be described as realised household savings.
+
+## Limitations
+
+- No appliance control, smart-meter ingestion, or schedule-adherence observation.
+- Uniform task load shapes.
+- Manual/sample tariffs unless a caller supplies another curve.
+- Northern Ireland and provider-failure paths use labelled profiles rather than live forecasts.
+- No calibrated guarantee of savings, recommendation correctness, or user behaviour.

@@ -3,6 +3,7 @@ source of truth; the web app generates its TypeScript types from the schema."""
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -13,7 +14,7 @@ class RegionOut(BaseModel):
     name: str
     nation: str
     carbon_source: str
-    has_live_forecast: bool
+    supports_live_forecast: bool
     supports_agile: bool
 
 
@@ -36,7 +37,33 @@ class AgileTariffOut(BaseModel):
     source: str = "live_agile"
 
 
-class ForecastOut(BaseModel):
+CarbonSource = Literal[
+    "gb_live_forecast",
+    "ni_eirgrid_typical_profile",
+    "gb_sample_profile",
+    "unavailable",
+]
+
+
+class CarbonProvenanceOut(BaseModel):
+    carbon_source: CarbonSource
+    carbon_source_label: str
+    retrieved_at_utc: datetime | None = None
+    valid_from_utc: datetime | None = None
+    valid_to_utc: datetime | None = None
+    is_live_forecast: bool
+    is_fallback: bool
+    fallback_reason: str | None = None
+
+
+class PriceProvenanceOut(BaseModel):
+    price_source: Literal["octopus_agile_live", "user_entered_tariff"] | None = None
+    price_source_label: str | None = None
+    price_is_live: bool = False
+    price_unavailable_reason: Literal["not_supported", "not_published"] | None = None
+
+
+class ForecastOut(CarbonProvenanceOut, PriceProvenanceOut):
     """The day's shape for a region: the 48-slot carbon curve the band draws,
     plus the Agile price curve when the region has one. Powers the website's
     signature day-band (home hero + results) without running an optimise."""
@@ -44,11 +71,9 @@ class ForecastOut(BaseModel):
     region: str
     region_id: str
     carbon_g: list[float]  # 48 half-hourly gCO2/kWh
-    carbon_source: str  # "live_forecast" | "typical_profile" | "sample"
     price_p: list[float] | None = None  # 48 half-hourly p/kWh (Agile), null if unavailable
     agile_day: str | None = None  # day the price curve is for (ISO), when present
     agile_product: str | None = None
-    has_live_forecast: bool
     supports_agile: bool
 
 
@@ -94,15 +119,14 @@ class ScheduledTaskOut(BaseModel):
     baseline_window: str
     cost_saving_p: float
     carbon_saving_g: float
-    confidence: float
-    confidence_band: str
+    robustness_score: float
+    robustness_band: str
     caveat: str
 
 
-class OptimiseResponse(BaseModel):
+class OptimiseResponse(CarbonProvenanceOut, PriceProvenanceOut):
     objective: str
     region: str
-    carbon_source: str  # "live_forecast" | "typical_profile" | "sample"
     total_cost_saving_p: float
     total_carbon_saving_g: float
     tasks: list[ScheduledTaskOut]

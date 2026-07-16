@@ -17,7 +17,7 @@ def constraint_violations(tasks: list[Task], schedule: Schedule) -> int:
     )
 
 
-def average_confidence(schedule: Schedule) -> float:
+def average_robustness(schedule: Schedule) -> float:
     if not schedule.tasks:
         return 0.0
-    return sum(t.confidence for t in schedule.tasks) / len(schedule.tasks)
+    return sum(t.robustness_score for t in schedule.tasks) / len(schedule.tasks)

@@ -1,4 +1,4 @@
-savings_date,community_id,household_id,device_type,baseline_cost_p,optimised_cost_p,cost_saving_p,carbon_saving_g,peak_slots_avoided,confidence,confidence_band
+savings_date,community_id,household_id,device_type,baseline_cost_p,optimised_cost_p,cost_saving_p,carbon_saving_g,peak_slots_avoided,robustness_score,robustness_band
 2026-06-24,C1,C1-H1,Dishwasher,15.92,12.36,3.56,42.7,0,0.68,Medium
 2026-06-24,C1,C1-H1,Washing machine,11.54,7.7,3.85,46.2,0,0.85,High
 2026-06-24,C1,C1-H1,EV charge,60.91,60.91,-0.0,0.0,0,0.85,High

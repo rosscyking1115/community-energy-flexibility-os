@@ -6,7 +6,7 @@ import "./globals.css";
 import { plexMono, plexSans } from "./fonts";
 
 export const metadata: Metadata = {
-  title: "After Midnight — when to run flexible loads",
+  title: "Community Energy Flex — when to run flexible loads",
   description:
     "Find the cleanest, cheapest window to run flexible electricity loads, from live UK grid carbon and Octopus Agile prices. Planning advice only.",
 };

@@ -19,7 +19,7 @@ hooks in `lib/api.ts` and the types in `lib/types.ts`.
 optional region auto-detect (by postcode via a future `/api/regions/by-postcode`).
 
 **Plan (`app/plan/page.tsx`)** — the core tool. Flow:
-1. Region select (`getRegions`). If `has_live_forecast` is false (Northern
+1. Region select (`getRegions`). If `supports_live_forecast` is false (Northern
    Ireland), show a small "typical-day profile, not a live forecast" note.
 2. Tariff: Agile (auto, when `supports_agile`) / Economy 7 / Flat / Manual.
 3. Appliances: add from presets (`getAppliances`) as editable chips —
@@ -29,7 +29,7 @@ optional region auto-detect (by postcode via a future `/api/regions/by-postcode`
    saves 13p / 158 g · High", the price+carbon curve with recommended windows
    shaded, totals, a caveats panel, share/download.
 
-**Methodology** — plain-language baseline/confidence (link to the repo docs).
+**Methodology** — plain-language baseline/robustness (link to the repo docs).
 
 ## Non-negotiable design rules (from the product ethics + MoveIn playbook)
 

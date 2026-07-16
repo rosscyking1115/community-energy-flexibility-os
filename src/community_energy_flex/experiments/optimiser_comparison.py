@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 from community_energy_flex.domain.models import Objective, ObjectiveWeights, PlanningSlot, Task
 from community_energy_flex.optimisation.linear_programming import optimise_lp
-from community_energy_flex.optimisation.metrics import average_confidence, constraint_violations
+from community_energy_flex.optimisation.metrics import average_robustness, constraint_violations
 from community_energy_flex.optimisation.rule_based import Schedule, optimise
 
 
@@ -26,7 +26,7 @@ class ComparisonResult:
     objective: str
     total_cost_saving_p: float
     total_carbon_saving_g: float
-    avg_confidence: float
+    avg_robustness: float
     constraint_violations: int
     runtime_s: float
     schedule: Schedule
@@ -38,7 +38,7 @@ def _result(name: str, tasks, schedule: Schedule, runtime_s: float) -> Compariso
         objective=str(schedule.objective),
         total_cost_saving_p=round(schedule.total_cost_saving_p, 3),
         total_carbon_saving_g=round(schedule.total_carbon_saving_g, 3),
-        avg_confidence=round(average_confidence(schedule), 3),
+        avg_robustness=round(average_robustness(schedule), 3),
         constraint_violations=constraint_violations(tasks, schedule),
         runtime_s=round(runtime_s, 5),
         schedule=schedule,
@@ -105,7 +105,7 @@ def log_comparison_to_mlflow(
                 {
                     "total_cost_saving_p": r.total_cost_saving_p,
                     "total_carbon_saving_g": r.total_carbon_saving_g,
-                    "avg_confidence": r.avg_confidence,
+                    "avg_robustness": r.avg_robustness,
                     "constraint_violations": r.constraint_violations,
                     "runtime_seconds": r.runtime_s,
                 }
@@ -127,11 +127,11 @@ def _main() -> int:  # pragma: no cover - thin CLI wrapper
     slots = build_planning_slots(sample_carbon_curve(), tariff)
     results = compare_optimisers(sample_tasks(), slots, tariff_is_manual=tariff.is_manual)
 
-    print(f"{'optimiser':12} {'objective':14} {'cost_p':>8} {'carbon_g':>9} {'conf':>5} {'ms':>6}")
+    print(f"{'optimiser':12} {'objective':14} {'cost_p':>8} {'carbon_g':>9} {'rob':>5} {'ms':>6}")
     for r in results:
         print(
             f"{r.optimiser:12} {r.objective:14} {r.total_cost_saving_p:8.2f} "
-            f"{r.total_carbon_saving_g:9.1f} {r.avg_confidence:5.2f} {r.runtime_s * 1000:6.1f}"
+            f"{r.total_carbon_saving_g:9.1f} {r.avg_robustness:5.2f} {r.runtime_s * 1000:6.1f}"
         )
     try:
         log_comparison_to_mlflow(results, extra_params={"tariff": tariff.name})

@@ -1,4 +1,4 @@
-"""Public HTTP API for After Midnight.
+"""Public HTTP API for Community Energy Flex.
 
 A thin FastAPI service that wraps the ``community_energy_flex`` engine and serves
 the reference datasets, so a website (or any client) can get an optimised

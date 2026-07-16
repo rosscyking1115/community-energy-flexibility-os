@@ -5,6 +5,8 @@ from community_energy_flex.demo import sample_carbon_curve, sample_tasks
 from community_energy_flex.domain.models import Objective
 from community_energy_flex.optimisation.planning import build_planning_slots
 from community_energy_flex.optimisation.rule_based import optimise
+from community_energy_flex.reporting.excel_report import build_workbook, write_workbook_bytes
+from community_energy_flex.reporting.pdf_report import write_pdf_bytes
 from community_energy_flex.reporting.summary import build_action_summary, format_text_report
 
 
@@ -26,7 +28,22 @@ def test_totals_convert_units():
     assert summary.total_carbon_saving_kg == summary.total_carbon_saving_g / 1000.0
 
 
-def test_text_report_mentions_safety_and_confidence():
+def test_text_report_mentions_safety_and_robustness():
     text = format_text_report(_summary())
     assert "planning recommendations only" in text
-    assert "confidence" in text.lower()
+    assert "robustness" in text.lower()
+
+
+def test_excel_report_has_brand_and_robustness_column():
+    workbook = build_workbook(_summary())
+
+    assert workbook["Executive Summary"]["A1"].value == "Community Energy Flex - Action Report"
+    assert workbook["Tomorrow Schedule"]["F1"].value == "Robustness indicator"
+    assert write_workbook_bytes(_summary()).startswith(b"PK")
+
+
+def test_pdf_report_is_serialised():
+    report = write_pdf_bytes(_summary())
+
+    assert report.startswith(b"%PDF")
+    assert len(report) > 1_000

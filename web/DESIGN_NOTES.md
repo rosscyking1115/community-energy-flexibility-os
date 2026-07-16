@@ -1,4 +1,4 @@
-# Design notes — "After Midnight"
+# Design notes — Community Energy Flex
 
 The realized design record for the web UI. Identity and tokens came from the
 `frontend-design` pass (see `DESIGN_BRIEF_SUPPLEMENT.md`); this records what was
@@ -34,7 +34,7 @@ The band draws from a new API endpoint, `GET /v1/forecast/{region_id}`, added
 for this build: the region's 48-slot carbon curve (live GB / EirGrid NI) plus
 the Agile price curve where available. Home fetches it server-side
 (`lib/server-data.ts`); `/plan` fetches via the BFF (`lib/api.ts` →
-`app/api/forecast/[region]`). Windows, savings, confidence and the safety
+`app/api/forecast/[region]`). Windows, savings, robustness and the safety
 statement all come from the real `POST /v1/optimise`. `lib/scoring.ts` only
 parses the API's window strings and computes the home hero's honest "cleanest
 window" from the real curve — no fabricated data anywhere.

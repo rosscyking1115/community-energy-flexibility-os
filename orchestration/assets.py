@@ -41,7 +41,7 @@ def carbon_forecast_curve(context: AssetExecutionContext) -> list[float]:
     return curve
 
 
-@asset(description="Optimised schedule with baseline, confidence and monitoring.")
+@asset(description="Optimised schedule with baseline, robustness and monitoring.")
 def daily_schedule(context: AssetExecutionContext, carbon_forecast_curve: list[float]):
     config = DailyPipelineConfig(
         tasks=sample_tasks(),

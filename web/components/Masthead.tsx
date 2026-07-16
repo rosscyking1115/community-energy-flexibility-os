@@ -32,7 +32,7 @@ export default function Masthead() {
               <span key={i} style={{ height: b.h, background: b.amber ? "var(--filament)" : undefined }} />
             ))}
           </span>
-          <span className={styles.word}>After Midnight</span>
+          <span className={styles.word}>Community Energy Flex</span>
           <span className={`mono ${styles.tag}`}>Grid flexibility</span>
         </Link>
         <nav aria-label="Primary" className={styles.nav}>

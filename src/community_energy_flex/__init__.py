@@ -1,4 +1,4 @@
-"""After Midnight (Community Energy Flexibility engine).
+"""Community Energy Flex decision-support engine.
 
 A decision-support system that recommends when households and small
 organisations should run flexible electricity loads, to reduce cost and carbon

@@ -24,7 +24,7 @@ def test_each_record_type_gets_its_own_file(tmp_path):
         OptimisationQuality(
             run_id="r1", objective="balanced", task_count=3,
             total_cost_saving_p=12.0, total_carbon_saving_g=140.0,
-            avg_confidence=0.8, constraint_violations=0,
+            avg_robustness=0.8, constraint_violations=0,
         )
     )
     store.record(

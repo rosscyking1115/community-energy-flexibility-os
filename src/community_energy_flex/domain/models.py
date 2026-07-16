@@ -159,7 +159,7 @@ class Placement:
 @dataclass(frozen=True)
 class ScheduledTask:
     """The optimiser's recommendation for a single task, with baseline
-    comparison, confidence, and a plain-language caveat."""
+    comparison, robustness indicator, and a plain-language caveat."""
 
     task_id: str
     device_type: str
@@ -170,8 +170,8 @@ class ScheduledTask:
     baseline_start_index: int
     baseline_cost_p: float
     baseline_carbon_g: float
-    confidence: float
-    confidence_band: str
+    robustness_score: float
+    robustness_band: str
     caveat: str
 
     @property

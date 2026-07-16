@@ -6,7 +6,7 @@
 domain/        pure data types + invariants (Task, Schedule, PlanningSlot, ...)
    ▲
 data_sources/  carbon-intensity client + tariff models (I/O isolated, parsers pure)
-optimisation/  feasible windows → energy model → objective → confidence → optimiser
+optimisation/  feasible windows → energy model → objective → robustness → optimiser
 reporting/     ActionSummary (one source of truth) → text / Excel / PDF renderers
 monitoring/    run store (CSV) + forecast-vs-actual retro loop
 pipeline/      daily run as injected, testable functions (keep-last-good fallback)
@@ -37,7 +37,7 @@ A deep-module / deletion-test pass over `optimisation/` and `reporting/`:
 | Module | Verdict |
 |---|---|
 | `energy_model` | Deep, widely reused primitive — keep. |
-| `objective`, `confidence` | Substantial logic behind a small interface — keep. |
+| `objective`, `robustness` | Substantial logic behind a small interface — keep. |
 | `feasible_windows`, `baseline` | Small but each owns a named domain concept with good locality — keep. |
 | `reporting/summary` | Good seam; Excel/PDF are thin renderers — keep. |
 

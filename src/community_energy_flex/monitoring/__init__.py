@@ -1,4 +1,4 @@
-"""Run tracking and the forecast-vs-actual retro loop.
+"""Run tracking and conditional ex-post schedule evaluation.
 
 For the MVP this is where optimiser-run evidence lives (the plan's MONITORING.*
 tables). MLflow only joins later, once there is a real forecast *model* worth

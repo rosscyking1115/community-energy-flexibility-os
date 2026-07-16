@@ -1,5 +1,4 @@
-"""The scheduling optimiser: feasible windows, energy model, objectives,
-confidence, and the rule-based solver."""
+"""Scheduling primitives, objectives, robustness, and optimiser entry points."""
 
 from community_energy_flex.optimisation.planning import (
     DEFAULT_PEAK_SLOTS,

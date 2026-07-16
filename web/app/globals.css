@@ -1,4 +1,4 @@
-/* Design system for "After Midnight" — see DESIGN_NOTES.md. Tokens as custom
+/* Design system for Community Energy Flex — see DESIGN_NOTES.md. Tokens as custom
    properties; each component/page carries its own CSS Module. The one rule that
    defines the product: colour is never a verdict. Amber says only "act here". */
 

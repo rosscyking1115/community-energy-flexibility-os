@@ -111,7 +111,7 @@ def main() -> int:
                             day.isoformat(), cid, hh, st.device_type,
                             round(st.baseline_cost_p, 2), round(st.cost_p, 2),
                             round(st.cost_saving_p, 2), round(st.carbon_saving_g, 1),
-                            avoided, st.confidence, st.confidence_band,
+                            avoided, st.robustness_score, st.robustness_band,
                         ]
                     )
 
@@ -122,8 +122,8 @@ def main() -> int:
             [
                 "savings_date", "community_id", "household_id", "device_type",
                 "baseline_cost_p", "optimised_cost_p", "cost_saving_p",
-                "carbon_saving_g", "peak_slots_avoided", "confidence",
-                "confidence_band",
+                "carbon_saving_g", "peak_slots_avoided", "robustness_score",
+                "robustness_band",
             ]
         )
         writer.writerows(rows)
