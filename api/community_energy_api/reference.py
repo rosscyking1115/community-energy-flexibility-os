@@ -1,7 +1,7 @@
 """Load the static reference datasets (regions, appliances) once into memory.
 
-Per the MoveIn playbook: ship a tiny read-only extract, not a database. These
-files are versioned in the repo; a refresh is a new file + redeploy.
+The pattern here: ship a tiny read-only extract, not a database. These files
+are versioned in the repo; a refresh is a new file + redeploy.
 """
 
 from __future__ import annotations

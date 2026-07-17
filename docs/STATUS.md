@@ -1,6 +1,6 @@
 # Project status
 
-**Release:** v0.2.0 credibility closeout  
+**Release:** v0.2.1 (continues the v0.2.0 credibility closeout)  
 **State:** feature frozen  
 **Product and repository name:** Community Energy Flex
 

@@ -1,6 +1,6 @@
 # Claim ledger
 
-This ledger defines which public statements the repository can support at the v0.2.0 credibility closeout.
+This ledger defines which public statements the repository can support at the v0.2.1 release (the v0.2.0 credibility-closeout line).
 
 | Claim | Status | Evidence | Required wording / boundary |
 |---|---|---|---|

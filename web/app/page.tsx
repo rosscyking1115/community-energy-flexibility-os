@@ -60,7 +60,7 @@ export default async function Home() {
           {isLive ? `Live forecast · ${HERO_REGION_NAME}` : `${forecast?.carbon_source_label ?? "Data unavailable"} · illustrative timing`}
         </p>
         <h1 style={{ fontWeight: 700, fontSize: "clamp(32px,5.4vw,54px)", lineHeight: 1.04, letterSpacing: "-0.03em", margin: "0 0 18px", maxWidth: "17ch", textWrap: "balance" }}>
-          Find a lower-cost, lower-carbon time to run flexible loads.
+          Find a lower-carbon time to run flexible loads.
         </h1>
         <p style={{ fontSize: "clamp(16px,2.2vw,19px)", lineHeight: 1.55, maxWidth: "54ch", color: "var(--ink-soft-2)", margin: 0 }}>
           One horizontal day, midnight to midnight. The dark bars are how heavy

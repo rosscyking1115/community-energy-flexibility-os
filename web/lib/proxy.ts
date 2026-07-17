@@ -5,7 +5,7 @@ import { API_BASE_URL } from "@/lib/config";
  * same-origin /api/* routes that call this — so the API origin stays hidden,
  * CORS is sidestepped entirely, and errors are shaped in one place (forward the
  * upstream status + detail; a network failure becomes a clean 503, never a
- * blanket 500). See the MoveIn playbook.
+ * blanket 500).
  */
 export async function proxy(path: string, init?: RequestInit): Promise<Response> {
   try {

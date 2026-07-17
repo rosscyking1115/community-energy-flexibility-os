@@ -1,6 +1,6 @@
 {
   "name": "community-energy-flex-web",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Community Energy Flex — a decision-systems reference website wired to the public API.",
   "scripts": {

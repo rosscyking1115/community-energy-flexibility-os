@@ -31,7 +31,7 @@ optional region auto-detect (by postcode via a future `/api/regions/by-postcode`
 
 **Methodology** — plain-language baseline/robustness (link to the repo docs).
 
-## Non-negotiable design rules (from the product ethics + MoveIn playbook)
+## Non-negotiable design rules (from the product ethics principles)
 
 - **Indicators, never verdicts.** Planning advice; caveats; never "guaranteed".
   Always render `safety_statement`.

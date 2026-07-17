@@ -126,6 +126,6 @@ Both dashboard images use synthetic-household demonstration data. The model, DAX
 
 ## Project status
 
-Version 0.2.0 is a credibility closeout and feature-freeze release. Maintenance is limited to correctness, dependency/security updates, and deployment reliability; new research claims require new observed evidence and an explicit scope decision.
+Version 0.2.1 continues the v0.2.0 credibility closeout; it remains a feature-freeze release, with post-release correctness and honesty fixes. Maintenance is limited to correctness, dependency and security updates, and deployment reliability; new research claims require new observed evidence and an explicit scope decision.
 
 MIT © 2026 Cheng-Yuan King.
